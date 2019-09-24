@@ -1,0 +1,380 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+## The first thing to do is the authorization for GCS where I've been storing the data.
+Notice that I had to override the default keys because this is not my primary bucket.
+```{r,warning=FALSE}
+options(googleAuthR.scopes.selected = "https://www.googleapis.com/auth/cloud-platform")
+
+project <- "ecobici-216519"
+zone <- "us-east4-c"
+account_key <- "/home/ollin/Descargas/ecobici-216519-f831f993f3b3.json"
+# account_key <- "/home/ollin/Downloads/ecobici-216519-e6f2dd2117b4.json"
+
+bucket <- "ecobici-usage"
+
+Sys.setenv(
+  "GCS_AUTH_FILE" = account_key,
+  "GCS_DEFAULT_PROJECT_ID" = project,
+  "GCS_DEFAULT_ZONE" = zone,
+  "GCS_DEFAULT_BUCKET" = bucket
+)
+
+# install.packages("googleCloudStorageR")
+library(googleCloudStorageR)
+# gcs_auth()
+gcs_get_global_bucket()
+bucket_info <- gcs_get_bucket(bucket)
+objects <- gcs_list_objects(bucket)
+```
+
+```{r,echo=FALSE,warning=FALSE,include=FALSE}
+paquetines <- c("ggplot2","plotly","tibble","tidyr","magrittr","dplyr","readr","ggpmisc","sf",
+                "reshape2","rangeMapper","RColorBrewer","stringr","quadmesh","rgl","psych","purrr",
+                "rgdal","deldir","ggthemes","broom","leaflet","htmltools","spatstat","geosphere") #"sf"
+no_instalados <- paquetines[!(paquetines %in% installed.packages()[,"Package"])]
+if(length(no_instalados)) install.packages(no_instalados)
+lapply(paquetines, library, character.only = TRUE)
+```
+
+I defined a function to get the geometries in an easy way. **TODO**: update _fortify_ with _broom_
+```{r,warning=FALSE}
+load_geom <- function(df, geom_col, col_shape){
+    geom_col <- deparse(substitute(geom_col))
+    col_shape <- deparse(substitute(col_shape))
+    mun_shp = rangeMapper::WKT2SpatialPolygonsDataFrame(df, geom = geom_col, id = col_shape)
+    mun_df <- fortify(mun_shp, region = col_shape)
+    names(mun_df)[names(mun_df)=="id"] <- col_shape
+
+    return(mun_df)
+}
+```
+
+
+
+```{r,warning=FALSE}
+# muni <- read_delim("https://storage.googleapis.com/ecobici-usage/geom_muni.csv",delim="|")
+muni <- read_delim("./tmp/geom_muni.csv",delim="|")
+violence <- read_delim("../data/IDM_NM_jul19.csv",delim=",")
+violence <- read_delim("../data/Municipal-Delitos-2015-2019_ago19/Municipal Delitos - agosto 2019.csv",delim=",")
+colnames(violence)[4] <- "CVEGEO"
+violence$CVEGEO <- str_pad(as.character(violence$CVEGEO),5,pad="0")
+
+femicides <- violence[violence$`Subtipo de delito`=="Feminicidio",]
+femicides$total <- rowSums(femicides[,c("Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre")],na.rm = T)
+femicides <- femicides[femicides$total > 0,]
+total_femicides <- femicides %>% select(c("Anio","CVEGEO","total")) %>% group_by(Anio,CVEGEO) %>% summarise(Total=sum(total))
+total_femicides <- total_femicides[complete.cases(total_femicides),]
+
+femicides_2015 <- total_femicides[total_femicides$Anio == 2015,]
+
+# muni[grepl("MULTIPOLYGON",muni$WKT),]$WKT <- sf::st_cast(muni[grepl("MULTIPOLYGON",muni$WKT),]$WKT,"POLYGON")
+# testmuni <- muni[!grepl("MULTIPOLYGON",muni$WKT),]
+# municipios_nal <- muni %>% 
+  # left_join(femicides_2015)
+```
+
+Now we can load the municipality data as polygons, and fix the names a bit to match the points
+of shelters and damages.
+```{r,warning=FALSE}
+municipality <- load_geom(muni,geom_col = WKT,col_shape = CVEGEO)
+# municipios_nal <- municipality %>% left_join(femicides_2015)
+
+# colnames(municipios_nal)
+# municipality$NOM_MUN <- toupper(iconv(municipality$NOM_MUN,from="UTF-8",to="ASCII//TRANSLIT"))
+minval <- min(total_femicides$Total)
+maxval <- max(total_femicides$Total)
+col.range <- c(minval, maxval)
+```
+
+Let's plot something to check if it is what we wanted.
+
+```{r,warning=FALSE}
+year <- 2015
+femicides_year <- total_femicides[total_femicides$Anio == year,]
+municipios_nal <- municipality %>% left_join(femicides_year)
+ggplot()+
+  geom_polygon(data = municipios_nal,
+               aes(long,lat,label=CVEGEO,group=group,
+                   fill=Total),color="grey",size=0.1,alpha=0.8)+
+  coord_map(projection = "mercator")+
+  scale_fill_continuous(low="blue", high="red",
+                       guide="colorbar",na.value="#f2f2f2",
+                       limits=col.range)+
+  labs(title=as.character(year))+
+  theme(#panel.grid.major.y = element_line(color = "gray"),
+        panel.grid.major.y = element_blank(),
+        text = element_text(color = "gray20"),
+        panel.background = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.box = "horizontal",
+        legend.text = element_text(size = 10),
+        plot.caption = element_text(hjust=0),
+        plot.title = element_text(size = 16, face = "bold",hjust=0.39))
+# ggsave("../figs/2015.png")
+```
+
+
+
+```{r,warning=FALSE}
+year <- 2016
+femicides_year <- total_femicides[total_femicides$Anio == year,]
+municipios_nal <- municipality %>% left_join(femicides_year)
+ggplot()+
+  geom_polygon(data = municipios_nal,
+               aes(long,lat,label=CVEGEO,group=group,
+                   fill=Total),color="grey",size=0.1,alpha=0.8)+
+  coord_map(projection = "mercator")+
+  scale_fill_continuous(low="blue", high="red",
+                       guide="colorbar",na.value="#f2f2f2",
+                       limits=col.range)+
+  labs(title=as.character(year))+
+  theme(#panel.grid.major.y = element_line(color = "gray"),
+        panel.grid.major.y = element_blank(),
+        text = element_text(color = "gray20"),
+        panel.background = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.box = "horizontal",
+        legend.text = element_text(size = 10),
+        plot.caption = element_text(hjust=0),
+        plot.title = element_text(size = 16, face = "bold",hjust=0.39))
+# ggsave("../figs/2016.png")
+```
+
+
+```{r,warning=FALSE}
+year <- 2017
+femicides_year <- total_femicides[total_femicides$Anio == year,]
+municipios_nal <- municipality %>% left_join(femicides_year)
+ggplot()+
+  geom_polygon(data = municipios_nal,
+               aes(long,lat,label=CVEGEO,group=group,
+                   fill=Total),color="grey",size=0.1,alpha=0.8)+
+  coord_map(projection = "mercator")+
+  scale_fill_continuous(low="blue", high="red",
+                       guide="colorbar",na.value="#f2f2f2",
+                       limits=col.range)+
+  labs(title=as.character(year))+
+  theme(#panel.grid.major.y = element_line(color = "gray"),
+        panel.grid.major.y = element_blank(),
+        text = element_text(color = "gray20"),
+        panel.background = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.box = "horizontal",
+        legend.text = element_text(size = 10),
+        plot.caption = element_text(hjust=0),
+        plot.title = element_text(size = 16, face = "bold",hjust=0.39))
+# ggsave("../figs/2017.png")
+```
+
+
+```{r,warning=FALSE}
+year <- 2018
+femicides_year <- total_femicides[total_femicides$Anio == year,]
+municipios_nal <- municipality %>% left_join(femicides_year)
+ggplot()+
+  geom_polygon(data = municipios_nal,
+               aes(long,lat,label=CVEGEO,group=group,
+                   fill=Total),color="grey",size=0.1,alpha=0.8)+
+  coord_map(projection = "mercator")+
+  scale_fill_continuous(low="blue", high="red",
+                       guide="colorbar",na.value="#f2f2f2",
+                       limits=col.range)+
+  labs(title=as.character(year))+
+  theme(#panel.grid.major.y = element_line(color = "gray"),
+        panel.grid.major.y = element_blank(),
+        text = element_text(color = "gray20"),
+        panel.background = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.box = "horizontal",
+        legend.text = element_text(size = 10),
+        plot.caption = element_text(hjust=0),
+        plot.title = element_text(size = 16, face = "bold",hjust=0.39))
+# ggsave("../figs/2018.png")
+```
+
+
+```{r}
+meses <- c("Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre")
+
+monthly_femicides <- femicides %>%
+  select(Anio,CVEGEO,meses) %>%
+  gather(meses,key="Month",value="cases") %>% 
+  group_by(Anio,CVEGEO,Month) %>%
+  summarise_each(funs(sum))
+
+monthly_femicides$Month %<>%
+  gsub("Enero","01",.) %>% 
+  gsub("Febrero","02",.) %>% 
+  gsub("Marzo","03",.) %>% 
+  gsub("Abril","04",.) %>% 
+  gsub("Mayo","05",.) %>% 
+  gsub("Junio","06",.) %>% 
+  gsub("Julio","07",.) %>% 
+  gsub("Agosto","08",.) %>% 
+  gsub("Septiembre","09",.) %>% 
+  gsub("Octubre","10",.) %>% 
+  gsub("Noviembre","11",.) %>% 
+  gsub("Diciembre","12",.)
+
+monthly_femicides$Month <- as.numeric(monthly_femicides$Month)
+monthly_femicides <- monthly_femicides[complete.cases(monthly_femicides),]
+```
+
+```{r,warning=FALSE}
+minval <- min(monthly_femicides$cases)
+maxval <- max(monthly_femicides$cases)
+col.range <- c(minval, maxval)
+monthly_femicides[monthly_femicides ==0] <- NA
+for (anio in unique(monthly_femicides$Anio)){
+  for (mes in unique(monthly_femicides$Month)){
+    femicides_month <- monthly_femicides[(monthly_femicides$Anio == anio & monthly_femicides$Month == mes),]
+    municipios_nal <- municipality %>% left_join(femicides_month)
+    ggplot()+
+      geom_polygon(data = municipios_nal,
+                   aes(long,lat,label=CVEGEO,group=group,
+                       fill=cases),color="grey",size=0.1,alpha=0.8)+
+      coord_map(projection = "mercator")+
+      scale_fill_continuous(low="blue", high="red",
+                           guide="colorbar",na.value="#f2f2f2",
+                           limits=col.range)+
+      labs(title=paste0(as.character(mes),"/",as.character(year)))+
+      theme(#panel.grid.major.y = element_line(color = "gray"),
+            panel.grid.major.y = element_blank(),
+            text = element_text(color = "gray20"),
+            panel.background = element_blank(),
+            axis.title.x = element_blank(),
+            axis.title.y = element_blank(),
+            axis.text.x = element_blank(),
+            axis.text.y = element_blank(),
+            axis.ticks.x = element_blank(),
+            axis.ticks.y = element_blank(),
+            legend.box = "horizontal",
+            legend.text = element_text(size = 10),
+            plot.caption = element_text(hjust=0),
+            plot.title = element_text(size = 16, face = "bold",hjust=0.39))
+    name <- paste0("../figs/monthly/",as.character(mes),"_",as.character((anio)),".png")
+    ggsave(name)
+  }
+}
+```
+
+
+
+```{r}
+monthly_femicides <- femicides %>%
+  select(Anio,meses) %>%
+  gather(meses,key="Month",value="cases") %>% 
+  group_by(Anio,Month) %>%
+  summarise_each(funs(sum))
+
+monthly_femicides$Month %<>%
+  gsub("Enero","01",.) %>% 
+  gsub("Febrero","02",.) %>% 
+  gsub("Marzo","03",.) %>% 
+  gsub("Abril","04",.) %>% 
+  gsub("Mayo","05",.) %>% 
+  gsub("Junio","06",.) %>% 
+  gsub("Julio","07",.) %>% 
+  gsub("Agosto","08",.) %>% 
+  gsub("Septiembre","09",.) %>% 
+  gsub("Octubre","10",.) %>% 
+  gsub("Noviembre","11",.) %>% 
+  gsub("Diciembre","12",.)
+
+monthly_femicides <- monthly_femicides %>% mutate(date=paste0(Anio,"-",Month,"-03"))
+monthly_femicides$date <- lubridate::ymd(monthly_femicides$date)
+# monthly_femicides$date <- as.POSIXct(monthly_femicides$date)
+
+monthly_femicides <- monthly_femicides[complete.cases(monthly_femicides),]
+
+lm_eqn <- function(df){
+    m <- lm(cases ~ date, df);
+    eq <- substitute(italic(cases) == a + b %.% italic(month)*","~~italic(r)^2~"="~r2, 
+         list(a = format(unname(coef(m)[1]), digits = 2),
+              b = format(unname(coef(m)[2]), digits = 2),
+             r2 = format(summary(m)$r.squared, digits = 3)))
+    as.character(as.expression(eq));
+}
+
+ggplot(data=monthly_femicides, aes(x=date, y=cases)) +
+    geom_point(color="red", size=0.8, alpha=0.8)+
+    geom_line(color="blue", size=0.6, alpha=0.8)+
+    geom_smooth(color="grey",size=0.5)+
+    geom_text(x = monthly_femicides$date[13], y = 80, label = lm_eqn(monthly_femicides), parse = TRUE)+
+    geom_vline(xintercept = monthly_femicides$date[lubridate::yday(monthly_femicides$date) == 3], color = "grey60")+ 
+    coord_cartesian(ylim = c(0, 100), expand = FALSE,
+                    clip = "off",
+                    xlim = c(min(monthly_femicides$date)-lubridate::dweeks(4),max(monthly_femicides$date)+lubridate::dweeks(6))) +
+    scale_x_date(date_labels="%Y",date_breaks="1 year",
+                 date_minor_breaks="1 month",name="",
+                 breaks = scales::pretty_breaks())+
+    scale_y_continuous(limits = c(-3,100))+
+    annotate(geom = "text", x = monthly_femicides$date, y = -2.5, 
+             label = lubridate::month(monthly_femicides$date,label=T),
+             size = 2.7, angle=50) +
+    labs(title="Femicides in Mexico")+
+    theme_linedraw()+
+    theme(panel.grid.major.y = element_line(color = "gray"),
+          text = element_text(color = "gray20"),
+          axis.text.x = element_text(size=12,angle=50,hjust=1,vjust = 0.7),
+          axis.title.x = element_text(vjust = 0),
+          axis.title.y = element_text(face="italic"),
+          legend.box = "horizontal",
+          legend.text = element_text(size = 12),
+          plot.caption = element_text(hjust=0),
+          plot.title = element_text(size = 16, face = "bold",hjust=0.39))
+# ggsave("../figs/femicides_trend_reg.png")
+
+```
+
+
+
+# With Diego Valle package
+```{r}
+if (!require(devtools)) {
+    install.packages("devtools")
+}
+devtools::install_github('diegovalle/mxmaps') 
+
+colnames(monthly_femicides) <- c("year","region","month","value")
+
+mf_2015 <- total_femicides[total_femicides$Anio == 2018,]
+colnames(mf_2015) <- c("Anio","region","value")
+# mf_2015 <- tibble::tibble(region=unique(municipality$CVEGEO)) %>% right_join(mf_2015)
+#%>% left_join(femicides_month)
+
+data("mf_2015")
+mxmaps::mxmunicipio_choropleth(mf_2015, num_colors = 8,show_states = T)
+?mxmaps::mxmunicipio_choropleth
+```
+
+
+
+```{r}
+ggplot(total_femicides,aes(x=Total))+
+  geom_histogram(binwidth = 1)
+```
+
