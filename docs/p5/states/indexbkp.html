@@ -24,7 +24,7 @@ text{
 }
 
 text.big-text{
-  font-size: 20px;
+  font-size: 100px;
   font-weight: 400;
 }
 
@@ -40,24 +40,18 @@ text.big-text{
 <script src="https://d3js.org/d3.v3.min.js"></script>
 <script>
 
-var width = 1080,
-    height = 720,
+var width = 4*1080,
+    height = 4*720,
     centered;
 
-// Define the array for the names
-var namesF = [];
-
 // Define color scale
-var color = d3.scale//.linear()
-  .pow().exponent(0.5)
+var color = d3.scale.linear()
+  .domain([1, 32])
   .clamp(true)
-  .domain([0, 424])
-  .range([d3.rgb('#cce6cd'), d3.rgb('#004303')])
-  .nice();
-
+  .range(['#ffd2ee', '#c9007d']);
 
 var projection = d3.geo.mercator()
-  .scale(1500)
+  .scale(5500)
   // Center the Map in Mexico
   .center([-101.5, 24.5])
   .translate([width / 2, height / 2]);
@@ -93,53 +87,20 @@ var dummyText = g.append('text')
 
 var bigText = g.append('text')
   .classed('big-text', true)
-  .attr('x', width/2-80)
-  .attr('y', 150);
-
-var titleLayer = g.append('text')
-    .attr('x', width/2-80)             
-    .attr('y', 70)
-    .attr('text-anchor', "middle")  
-    .style("font-size", "35px") 
-    .style("font-weight", "900") 
-    .style('font-family', 'Josefin Slab')
-    .text("México Feminicida");
-
-var subtitleLayer = g.append('text')
-    .attr('x', width/2-80)             
-    .attr('y', 95)
-    .attr('text-anchor', "middle")  
-    .style("font-size", "20px") 
-    .style("font-weight", "500") 
-    .style('font-family', 'Josefin Slab')
-    .text("(2015-2019)");
-
-
-// var crossLayer = g.append("svg:image")
-//     .attr('x', 10)
-//     .attr('y', 95)
-//     .attr('width', 40)
-//     .attr('height', 38)
-//     .attr("xlink:href", "pink_cross.svg")
-
-var paliacateLayer = g.append("svg:image")
-    .attr('x', width-140)
-    .attr('y', 25)
-    .attr('width', 90)
-    .attr('height', 90)
-    .attr("xlink:href", "pal_verde.png")
+  .attr('x', width/2-130)
+  .attr('y', 280);
 
 // Load map data
-d3.json('mexico_pret.json', function(error, mapData) {
+d3.json('mexico.json', function(error, mapData) {
   var features = mapData.features;
 
   // Update color scale domain based on data
-  color.domain([d3.min(features, fem_num), d3.max(features, fem_num)]);
+  color.domain([0, d3.max(features, nameLength)]);
 
   // Draw each State as a path
   mapLayer.selectAll('path')
       .data(features)
-      .enter().append('path')
+    .enter().append('path')
       .attr('d', path)
       .attr('vector-effect', 'non-scaling-stroke')
       .style('fill', fillFn)
@@ -148,32 +109,20 @@ d3.json('mexico_pret.json', function(error, mapData) {
       .on('click', clicked);
 });
 
-
 // Get State name
 function nameFn(d){
   return d && d.properties ? d.properties.name : null;
 }
 
-// Get femicides number
-function femFn(d){
-  return d && d.properties ? d.properties.femicides : null;
-}
-
-// Get femicides number
-function fem_num(d){
-    var n = femFn(d);
-    return n
-}
-
 // Get State name length
-// function nameLength(d){
-//   var n = nameFn(d);
-//   return n ? n.length : 0;
-// }
+function nameLength(d){
+  var n = nameFn(d);
+  return n ? n.length : 0;
+}
 
 // Get State color
 function fillFn(d){
-  return color(d.properties.femicides);
+  return color(nameLength(d));
 }
 
 // When clicked, zoom in
@@ -209,17 +158,11 @@ function mouseover(d){
   d3.select(this).style('fill', '#8a0303');
 
   // Draw effects
-  textState(nameFn(d)+" - "+d.properties.femicides.toString());
-    d3.csv("nombres_mexico.csv", function(csv){
-        csv.map(function(d){
-                namesF.push(d.NOMBRE);
-        });
-      textArt(d3.shuffle(namesF).slice(0,d.properties.femicides))
-    });
+  textArt(nameFn(d));
 }
 
 function mouseout(d){
-  // Reset State color
+  // Reset province color
   mapLayer.selectAll('path')
     .style('fill', function(d){return centered && d===centered ? '#D5708B' : fillFn(d);});
 
@@ -228,7 +171,7 @@ function mouseout(d){
     .style('opacity', 0)
     .remove();
 
-  // Clear State name
+  // Clear province name
   bigText.text('');
 }
 
@@ -245,7 +188,7 @@ var FONTS = [
   "Playfair Display"
 ];
 
-function textState(text){
+function textArt(text){
   // Use random font
   var fontIndex = Math.round(Math.random() * FONTS.length);
   var fontFamily = FONTS[fontIndex] + ', ' + BASE_FONT;
@@ -253,37 +196,28 @@ function textState(text){
   bigText
     .style('font-family', fontFamily)
     .text(text);
-}
-
-function textArt(text){
-  // Use random font
-  var fontIndex = Math.round(Math.random() * FONTS.length);
-  var fontFamily = FONTS[fontIndex] + ', ' + BASE_FONT;
 
   // Use dummy text to compute actual width of the text
   // getBBox() will return bounding box
+  dummyText
+    .style('font-family', fontFamily)
+    .text(text);
+  var bbox = dummyText.node().getBBox();
+
+  var textWidth = bbox.width;
+  var textHeight = bbox.height;
+  var xGap = 3;
+  var yGap = 1;
 
   // Generate the positions of the text in the background
   var xPtr = 0;
   var yPtr = 0;
   var positions = [];
   var rowCount = 0;
-  if (text.length > 0){
   while(yPtr < height){
     while(xPtr < width){
-    var nombre = d3.shuffle(text)[0]
-    dummyText
-        .style('font-family', fontFamily)
-        .text(nombre);
-    var bbox = dummyText.node().getBBox();
-
-    var textWidth = bbox.width;
-    var textHeight = bbox.height;
-    var xGap = 3;
-    var yGap = 1;
-
       var point = {
-        text: nombre,
+        text: text,
         index: positions.length,
         x: xPtr,
         y: yPtr
@@ -300,7 +234,6 @@ function textArt(text){
     xPtr += Math.random() * 10;
     yPtr += textHeight + yGap;
   }
-}
 
   var selection = effectLayer.selectAll('text')
     .data(positions, function(d){return d.text+'/'+d.index;});
