@@ -46,6 +46,8 @@ var width = 1080,
 
 // Define the array for the names
 var namesF = [];
+var femLon = [];
+var femLat = [];
 
 // Define color scale
 var color = d3.scale//.linear()
@@ -56,10 +58,12 @@ var color = d3.scale//.linear()
   .nice();
 
 
+var mexCent = [-101.5, 24.5]
+
 var projection = d3.geo.mercator()
   .scale(1500)
   // Center the Map in Mexico
-  .center([-101.5, 24.5])
+  .center(mexCent)
   .translate([width / 2, height / 2]);
 
 var path = d3.geo.path()
@@ -114,14 +118,6 @@ var subtitleLayer = g.append('text')
     .style('font-family', 'Josefin Slab')
     .text("(2015-2019)");
 
-
-// var crossLayer = g.append("svg:image")
-//     .attr('x', 10)
-//     .attr('y', 95)
-//     .attr('width', 40)
-//     .attr('height', 38)
-//     .attr("xlink:href", "pink_cross.svg")
-
 var paliacateLayer = g.append("svg:image")
     .attr('x', width-140)
     .attr('y', 25)
@@ -146,6 +142,29 @@ d3.json('mexico_pret.json', function(error, mapData) {
       .on('mouseover', mouseover)
       .on('mouseout', mouseout)
       .on('click', clicked);
+
+
+// center cross x-5, y-6
+d3.csv("monthly.csv", function(error, data) {
+        g.selectAll("g")
+           .data(data.slice(0,100))
+           .enter()
+           .append("svg:image")
+           .attr("x", function(d) {
+                   return projection([d.lon, d.lat])[0]-5;
+           })
+           .attr("y", function(d) {
+                   return projection([d.lon, d.lat])[1]-6;
+           })
+           .attr('width',15)
+           .attr('height',14)
+            // .attr('width', function(d){
+            //     return d.count*15})
+            // .attr('height', function(d){
+            //     return d.count*14})
+            .attr("xlink:href", "pink_cross.svg")
+        });
+
 });
 
 
@@ -164,12 +183,6 @@ function fem_num(d){
     var n = femFn(d);
     return n
 }
-
-// Get State name length
-// function nameLength(d){
-//   var n = nameFn(d);
-//   return n ? n.length : 0;
-// }
 
 // Get State color
 function fillFn(d){
