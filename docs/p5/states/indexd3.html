@@ -43,6 +43,9 @@ text.big-text{
 var width = 1080,
     height = 720,
     centered;
+ 
+var animated = 1;
+// var parseDate = d3.timeParse("%Y-%m-%d");
 
 // Define the array for the names
 var namesF = [];
@@ -54,7 +57,8 @@ var color = d3.scale//.linear()
   .pow().exponent(0.5)
   .clamp(true)
   .domain([0, 424])
-  .range([d3.rgb('#cce6cd'), d3.rgb('#004303')])
+//   .range([d3.rgb('#cce6cd'), d3.rgb('#004303')])
+  .range([d3.rgb('#f3faf3'), d3.rgb('#004303')])
   .nice();
 
 
@@ -118,12 +122,26 @@ var subtitleLayer = g.append('text')
     .style('font-family', 'Josefin Slab')
     .text("(2015-2019)");
 
+var crossLayer = g.append('g')
+
+var dateLayer = g.append('g')
+
 var paliacateLayer = g.append("svg:image")
     .attr('x', width-140)
     .attr('y', 25)
     .attr('width', 90)
     .attr('height', 90)
     .attr("xlink:href", "pal_verde.png")
+    .on('click', clickCross);
+
+g.append('text')
+    .attr('x', width-160)
+    .attr('y', 50)
+    .attr('text-anchor', "middle")  
+    .style("font-size", "20px") 
+    .style("font-weight", "500") 
+    .style('font-family', 'Lobster')
+    .text("Pica el pañuelo");
 
 // Load map data
 d3.json('mexico_pret.json', function(error, mapData) {
@@ -142,31 +160,119 @@ d3.json('mexico_pret.json', function(error, mapData) {
       .on('mouseover', mouseover)
       .on('mouseout', mouseout)
       .on('click', clicked);
-
-
-// center cross x-5, y-6
-d3.csv("monthly.csv", function(error, data) {
-        g.selectAll("g")
-           .data(data.slice(0,100))
-           .enter()
-           .append("svg:image")
-           .attr("x", function(d) {
-                   return projection([d.lon, d.lat])[0]-5;
-           })
-           .attr("y", function(d) {
-                   return projection([d.lon, d.lat])[1]-6;
-           })
-           .attr('width',15)
-           .attr('height',14)
-            // .attr('width', function(d){
-            //     return d.count*15})
-            // .attr('height', function(d){
-            //     return d.count*14})
-            .attr("xlink:href", "pink_cross.svg")
-        });
-
 });
 
+// center cross x-5, y-6
+// var crossLayer = d3.csv("monthly.csv", function(error, data) {
+//     var crossElements = data.slice(0,100);
+//     var theCross = drawCross(crossElements);
+// });
+
+// var crossesLayer = d3.csv("monthly.csv", function(error, data) {
+//     data.forEach(function(p){
+//         drawCross(p);
+//     })
+// });
+
+// function update(data){
+//     var crosses = g.selectAll('g')
+//     .data(data);
+//     crosses.exit().remove();
+//     drawCross(data);
+// }
+
+
+        var formatParse = d3.time.format("%Y-%m");
+function redraw() {
+    d3.csv("monthly.csv", function(error, data) {
+        var parser = d3.time.format("%Y-%m-%d").parse;
+        data.forEach(function(d){
+            d.Year = +d.Year;
+            d.muni = d.muni;
+            d.Month = d.Month;
+            d.count = +d.count
+            d.date = parser(d.date);
+            d.lon = +d.lon;
+            d.lat = +d.lat;
+        })
+        // var hola = data[1000].date
+        // var domainTime = data.date.scale.domain();
+        var startEnd = d3.extent(data, function(d){return d.date})
+        // var crossElements = data.slice(0+t,100+t);
+        var crossElements = data.filter(function(d){
+            return formatParse(d.date) == formatParse(d3.time.month.offset(startEnd[0], t));
+        });
+        drawCross(crossElements)
+        drawDate(crossElements)
+    });
+    dateLayer.selectAll("*").transition().duration(100)
+    .style('opacity', 0).remove()
+    crossLayer.selectAll("*").transition().duration(100)
+    .style('opacity', 0).remove()
+}
+
+var t = 0; 
+function clickCross() {
+    // animated = animated * (-1)
+    var myTimer = setInterval(function(){
+        // if (animated !== 1){
+            dateLayer.selectAll("*").remove()
+            redraw(t);
+            t = t+1
+            if (t > 300){
+                clearInterval(myTimer);
+                // animated = animated * (-1);
+            }
+        // }else {
+            // clearInterval(myTimer);
+            // animated = 1;
+        //  }
+    },500);
+    t = 0;
+}
+
+
+function drawCross(data){
+    crossLayer
+        .selectAll('g')
+        .data(data)
+        .enter()
+        .append("svg:image")
+        .transition()
+        .duration(200)
+        .style('opacity', 4)
+        .attr("x", function(d) {
+                return projection([d.lon, d.lat])[0]-d.count*5;
+        })
+        .attr("y", function(d) {
+                return projection([d.lon, d.lat])[1]-d.count*6;
+        })
+        .attr('width', function(d){
+            return d.count*15})
+        .attr('height', function(d){
+            return d.count*14})
+        .attr("xlink:href", "pink_cross.svg")
+}
+
+function drawDate(data){
+    dateLayer
+        .selectAll('g')
+        .data(data)
+        .enter()
+        .append('text')
+        .attr('x', 200)             
+        .attr('y', height-50)
+        .attr('text-anchor', "middle")  
+        .attr("id","dateCorner")
+        .style("font-size", "30px") 
+        .style("font-weight", "500") 
+        .style('font-family', 'Josefin Slab')
+        // .text(data.Month[0]);
+        .text(function(d){
+            // return d.Month + " - " + d.Year.toString()
+            return formatParse(d.date)//.slice(0,7)
+        });
+}
 
 // Get State name
 function nameFn(d){
@@ -215,6 +321,8 @@ function clicked(d) {
   g.transition()
     .duration(750)
     .attr('transform', 'translate(' + width / 2 + ',' + height / 2 + ')scale(' + k + ')translate(' + -x + ',' + -y + ')');
+
+  clickCross();
 }
 
 function mouseover(d){
