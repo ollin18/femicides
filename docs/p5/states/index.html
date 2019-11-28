@@ -40,12 +40,32 @@ text.big-text{
 <script src="https://d3js.org/d3.v3.min.js"></script>
 <script>
 
+ var es_ES = {
+        "decimal": ",",
+        "thousands": ".",
+        "grouping": [3],
+        "currency": ["€", ""],
+        "dateTime": "%a %b %e %X %Y",
+        "date": "%d/%m/%Y",
+        "time": "%H:%M:%S",
+        "periods": ["AM", "PM"],
+        "days": ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"],
+        "shortDays": ["Dom", "Lun", "Mar", "Mi", "Jue", "Vie", "Sab"],
+        "months": ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
+        "shortMonths": ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+    };
+
+var ES = d3.locale(es_ES);
+
 var width = 1080,
     height = 720,
     centered;
  
+var t = 0; 
 var animated = 1;
-// var parseDate = d3.timeParse("%Y-%m-%d");
+var estan = 1;
+var parser = d3.time.format("%Y-%m-%d").parse;
+var formatParse = ES.timeFormat('%B \n %Y');
 
 // Define the array for the names
 var namesF = [];
@@ -132,7 +152,17 @@ var paliacateLayer = g.append("svg:image")
     .attr('width', 90)
     .attr('height', 90)
     .attr("xlink:href", "pal_verde.png")
+    .on('mouseover', mouseoverNo)
     .on('click', clickCross);
+
+g.append("svg:image")
+    .attr('x', width-110)
+    .attr('y', 95)
+    .attr('width', 90)
+    .attr('height', 90)
+    .attr("xlink:href", "pal_verde.png")
+    .on('mouseover', mouseoverNo)
+    .on('click', todas);
 
 g.append('text')
     .attr('x', width-160)
@@ -141,7 +171,16 @@ g.append('text')
     .style("font-size", "20px") 
     .style("font-weight", "500") 
     .style('font-family', 'Lobster')
-    .text("Pica el pañuelo");
+    .text("Pica un pañuelo");
+
+g.append('text')
+    .attr('x', width-60)
+    .attr('y', 110)
+    .attr('text-anchor', "middle")  
+    .style("font-size", "20px") 
+    .style("font-weight", "500") 
+    .style('font-family', 'Lobster')
+    .text("o un Estado");
 
 // Load map data
 d3.json('mexico_pret.json', function(error, mapData) {
@@ -162,30 +201,30 @@ d3.json('mexico_pret.json', function(error, mapData) {
       .on('click', clicked);
 });
 
-// center cross x-5, y-6
-// var crossLayer = d3.csv("monthly.csv", function(error, data) {
-//     var crossElements = data.slice(0,100);
-//     var theCross = drawCross(crossElements);
-// });
-
-// var crossesLayer = d3.csv("monthly.csv", function(error, data) {
-//     data.forEach(function(p){
-//         drawCross(p);
-//     })
-// });
-
-// function update(data){
-//     var crosses = g.selectAll('g')
-//     .data(data);
-//     crosses.exit().remove();
-//     drawCross(data);
-// }
-
-
-        var formatParse = d3.time.format("%Y-%m");
-function redraw() {
+function todas(){
+    dateLayer.selectAll("*").transition().duration(100)
+    .style('opacity', 20).remove()
+    crossLayer.selectAll("*").transition().duration(300)
+    .style('opacity', 0).remove()
     d3.csv("monthly.csv", function(error, data) {
-        var parser = d3.time.format("%Y-%m-%d").parse;
+        if (estan == 1){
+            drawCross(data);
+            estan = null;
+        } else {
+            crossLayer.selectAll("*").transition().duration(120)
+                .style('opacity', 0).remove();
+            dateLayer.selectAll("*").transition().duration(100)
+                .style('opacity', 20).remove()
+            effectLayer.selectAll('text').transition()
+                .style('opacity', 0)
+                .remove();
+            estan = 1;
+        }
+    });
+}
+
+function redraw(t) {
+    d3.csv("monthly.csv", function(error, data) {
         data.forEach(function(d){
             d.Year = +d.Year;
             d.muni = d.muni;
@@ -195,40 +234,35 @@ function redraw() {
             d.lon = +d.lon;
             d.lat = +d.lat;
         })
-        // var hola = data[1000].date
-        // var domainTime = data.date.scale.domain();
         var startEnd = d3.extent(data, function(d){return d.date})
-        // var crossElements = data.slice(0+t,100+t);
         var crossElements = data.filter(function(d){
             return formatParse(d.date) == formatParse(d3.time.month.offset(startEnd[0], t));
         });
         drawCross(crossElements)
         drawDate(crossElements)
     });
-    dateLayer.selectAll("*").transition().duration(100)
-    .style('opacity', 0).remove()
-    crossLayer.selectAll("*").transition().duration(100)
+    dateLayer.selectAll("*").transition().duration(600)
+    .style('opacity', 20).remove()
+    crossLayer.selectAll("*").transition().duration(500)
     .style('opacity', 0).remove()
 }
 
-var t = 0; 
 function clickCross() {
-    // animated = animated * (-1)
+    animated = animated * (-1)
     var myTimer = setInterval(function(){
-        // if (animated !== 1){
+        if (animated !== 1){
             dateLayer.selectAll("*").remove()
             redraw(t);
             t = t+1
-            if (t > 300){
+            if (t > 60){
                 clearInterval(myTimer);
-                // animated = animated * (-1);
+                animated = animated * (-1);
+                t = 0;
             }
-        // }else {
-            // clearInterval(myTimer);
-            // animated = 1;
-        //  }
-    },500);
-    t = 0;
+        }else {
+            clearInterval(myTimer);
+         }
+    },1500);
 }
 
 
@@ -239,7 +273,7 @@ function drawCross(data){
         .enter()
         .append("svg:image")
         .transition()
-        .duration(200)
+        .duration(700)
         .style('opacity', 4)
         .attr("x", function(d) {
                 return projection([d.lon, d.lat])[0]-d.count*5;
@@ -260,18 +294,19 @@ function drawDate(data){
         .data(data)
         .enter()
         .append('text')
-        .attr('x', 200)             
-        .attr('y', height-50)
+        .transition()
+        .duration(300)
+        .style('opacity', 4)
+        .attr('x', width/2-90)             
+        .attr('y', height-120)
         .attr('text-anchor', "middle")  
         .attr("id","dateCorner")
         .style("font-size", "30px") 
         .style("font-weight", "500") 
         .style('font-family', 'Josefin Slab')
-        // .text(data.Month[0]);
         .text(function(d){
-            // return d.Month + " - " + d.Year.toString()
-            return formatParse(d.date)//.slice(0,7)
-        });
+            return formatParse(d.date)
+        })
 }
 
 // Get State name
@@ -322,6 +357,10 @@ function clicked(d) {
     .duration(750)
     .attr('transform', 'translate(' + width / 2 + ',' + height / 2 + ')scale(' + k + ')translate(' + -x + ',' + -y + ')');
 
+  dateLayer.transition()
+    .duration(750)
+    .attr('transform', 'translate(' + width / 2 + ',' + height / 2 + ')scale(' + 1 + ')translate(' + -x + ',' + -y + ')');
+
   clickCross();
 }
 
@@ -336,6 +375,16 @@ function mouseover(d){
                 namesF.push(d.NOMBRE);
         });
       textArt(d3.shuffle(namesF).slice(0,d.properties.femicides))
+    });
+}
+
+function mouseoverNo(d){
+  // Draw effects
+    d3.csv("nombres_mexico.csv", function(csv){
+        csv.map(function(d){
+                namesF.push(d.NOMBRE);
+        });
+      textArt(d3.shuffle(namesF))
     });
 }
 
