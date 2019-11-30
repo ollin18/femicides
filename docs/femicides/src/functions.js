@@ -304,7 +304,7 @@ function redraw(t) {
     });
     dateLayer.selectAll("*").transition().duration(600)
     .style('opacity', 20).remove()
-    crossLayer.selectAll("*").transition().duration(800)
+    crossLayer.selectAll("*").transition().duration(600)
     .style('opacity', 0).remove()
 }
 
