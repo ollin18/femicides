@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+@import url(https://fonts.googleapis.com/css?family=Open+Sans+Condensed:300|Josefin+Slab|Arvo|Lato|Vollkorn|Abril+Fatface|Old+Standard+TT|Droid+Sans|Lobster|Inconsolata|Montserrat|Playfair+Display|Karla|Alegreya|Libre+Baskerville|Merriweather|Lora|Archivo+Narrow|Neuton|Signika|Questrial|Fjalla+One|Bitter|Varela+Round);
+
+.background {
+  fill: #eee;
+  pointer-events: all;
+}
+
+.map-layer {
+  fill: #fff;
+  stroke: #aaa;
+}
+
+.effect-layer{
+  pointer-events:none;
+}
+
+text{
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 300;
+}
+
+text.big-text{
+  font-size: 23px;
+  font-weight: 380;
+}
+
+.effect-layer text, text.dummy-text{
+  font-size: 12px;
+}
+
+</style>
+<body>
+
+<svg></svg>
+
+<script src="https://d3js.org/d3.v3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/1.13.0/d3-legend.min.js"></script>
+<script src="src/functions.js"></script>
+<script>
+
+ var es_ES = {
+        "decimal": ",",
+        "thousands": ".",
+        "grouping": [3],
+        "currency": ["€", ""],
+        "dateTime": "%a %b %e %X %Y",
+        "date": "%d/%m/%Y",
+        "time": "%H:%M:%S",
+        "periods": ["AM", "PM"],
+        "days": ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"],
+        "shortDays": ["Dom", "Lun", "Mar", "Mi", "Jue", "Vie", "Sab"],
+        "months": ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
+        "shortMonths": ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+    };
+
+var ES = d3.locale(es_ES);
+
+var width = 1080,
+    height = 720,
+    centered;
+
+var dateX=width/2-90;
+var dateY=height-120;
+ 
+var t = 0; 
+var animated = 1;
+var estan = null;
+var parser = d3.time.format("%Y-%m-%d").parse;
+var formatParse = ES.timeFormat('%B \n %Y');
+
+// Define the array for the names
+var namesF = [];
+var femLon = [];
+var femLat = [];
+
+// Define color scale
+var color = d3.scale//.linear()
+  .pow().exponent(0.5)
+  .clamp(true)
+//   .domain([0, 424])
+  .domain([0, 4])
+//   .range([d3.rgb('#cce6cd'), d3.rgb('#004303')])
+  .range([d3.rgb('#f3faf3'), d3.rgb('#004303')])
+  .nice();
+
+var crossScale = d3.scale
+  .linear()
+  .domain([1,4])
+  .range([2,10])
+
+
+var mexCent = [-101.5, 24.5]
+
+var projection = d3.geo.mercator()
+  .scale(1500)
+  // Center the Map in Mexico
+  .center(mexCent)
+  .translate([width / 2, height / 2]);
+
+var path = d3.geo.path()
+  .projection(projection);
+
+// Set svg width & height
+var svg = d3.select('svg')
+  .attr('width', width)
+  .attr('height', height);
+
+// Add background
+svg.append('rect')
+  .attr('class', 'background')
+  .attr('width', width)
+  .attr('height', height)
+  .on('click', clicked);
+
+var g = svg.append('g');
+
+var effectLayer = g.append('g')
+  .classed('effect-layer', true);
+
+var mapLayer = g.append('g')
+  .classed('map-layer', true);
+
+var dummyText = g.append('text')
+  .classed('dummy-text', true)
+  .attr('x', 10)
+  .attr('y', 30)
+  .style('opacity', 0);
+
+var bigText = g.append('text')
+  .classed('big-text', true)
+  .attr('x', width/2-80)
+  .attr('y', 135);
+
+var titleLayer = g.append('text')
+    .attr('x', width/2-80)             
+    .attr('y', 70)
+    .attr('text-anchor', "middle")  
+    .style("font-size", "35px") 
+    .style("font-weight", "900") 
+    .style('font-family', 'Josefin Slab')
+    .text("México Feminicida");
+
+var subtitleLayer = g.append('text')
+    .attr('x', width/2-80)             
+    .attr('y', 95)
+    .attr('text-anchor', "middle")  
+    .style("font-size", "20px") 
+    .style("font-weight", "500") 
+    .style('font-family', 'Josefin Slab')
+    .text("(2015-2019)");
+
+var crossLayer = g.append('g')
+
+var dateLayer = g.append('g')
+
+g.append('text')
+    .attr('x', width-180)
+    .attr('y', 70)
+    .attr('text-anchor', "middle")  
+    .style("font-size", "20px") 
+    .style("font-weight", "500") 
+    .style('font-family', 'Lobster')
+    .text("Pica un pañuelo o un Estado");
+
+var paliacateLayer = g.append("svg:image")
+    .attr('x', width-140)
+    .attr('y', 75)
+    .attr('width', 90)
+    .attr('height', 90)
+    .attr("xlink:href", "figs/pal_verde.png")
+    .on('mouseover', mouseoverNo)
+    .on('click', clickCross);
+
+g.append('text')
+    .attr('x', width-110)
+    .attr('y', 170)
+    .attr('text-anchor', "middle")  
+    .style("font-size", "18px") 
+    .style("font-weight", "900") 
+    .style('font-family', 'Josefin Slab')
+    .text("Iniciar / Parar");
+
+g.append("svg:image")
+    .attr('x', width-140)
+    .attr('y', 185)
+    .attr('width', 90)
+    .attr('height', 90)
+    .attr("xlink:href", "figs/pal_verde.png")
+    .on('mouseover', mouseoverNo)
+    .on('click', todas);
+
+g.append('text')
+    .attr('x', width-110)
+    .attr('y', 280)
+    .attr('text-anchor', "middle")  
+    .style("font-size", "18px") 
+    .style("font-weight", "900") 
+    .style('font-family', 'Josefin Slab')
+    .text("Mostrar / Borrar");
+
+
+// Load map data
+d3.json('data/mexico_pret.json', function(error, mapData) {
+  var features = mapData.features;
+
+  // Update color scale domain based on data
+  color.domain([d3.min(features, fem_num), d3.max(features, fem_num)]);
+
+  // Draw each State as a path
+  mapLayer.selectAll('path')
+      .data(features)
+      .enter().append('path')
+      .attr('d', path)
+      .attr('vector-effect', 'non-scaling-stroke')
+      .style('fill', fillFn)
+      .on('mouseover', mouseover)
+      .on('mouseout', mouseout)
+      .on('click', clicked);
+
+    var colorLegend = d3.legend.color()
+        .title("Casos Totales por Estado")
+        .labelAlign("middle")
+        .labelFormat(d3.format(".0f"))
+        .scale(color)
+        .ascending(true)
+        .cells(6)
+        .labels(["0","90","180","270","360","450"])
+        .shapePadding(5)
+        .shapeWidth(30)
+        .shapeHeight(20)
+        .labelOffset(10)
+
+    g.append("g")
+    .attr("transform", "translate(50,400)")
+    .call(colorLegend)
+
+});
+
+d3.csv("data/monthly.csv", function(error, data) {
+    data.forEach(function(d){
+        d.count = +d.count
+    })
+    var startEnd = d3.extent(data, function(d){return d.count})
+    crossScale.domain([startEnd[0], startEnd[1]]);
+
+    var sizeLegend = d3.legend.size()
+        .title("Casos Mensuales por Municipio")
+        .scale(crossScale)
+        .shape("rect")
+        .orient("horizontal")
+        .labelFormat(d3.format(".0f"))
+        .cells(7)
+        .labelAlign("start")
+        .labelOffset(15)
+        .shapePadding(10)
+
+    g.append("g")
+    .attr("class", "legendSizeLine")
+    .attr("transform", "translate(50,630)")
+    .call(sizeLegend)
+});
+
+var timerStart = setInterval(function(){
+    redrawTimeless(t);
+    t = t+1
+    if (t > 60){
+        clearInterval(timerStart);
+        t = 0;
+    }
+},11)
+
+</script>
