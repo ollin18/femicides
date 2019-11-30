@@ -69,8 +69,8 @@ var width = 1080,
 
 var dateX=width/2-90;
 var dateY=height-120;
- 
-var t = 0; 
+
+var t = 0;
 var animated = 1;
 var estan = null;
 var parser = d3.time.format("%Y-%m-%d").parse;
@@ -140,20 +140,20 @@ var bigText = g.append('text')
   .attr('y', 135);
 
 var titleLayer = g.append('text')
-    .attr('x', width/2-80)             
+    .attr('x', width/2-80)
     .attr('y', 70)
-    .attr('text-anchor', "middle")  
-    .style("font-size", "35px") 
-    .style("font-weight", "900") 
+    .attr('text-anchor', "middle")
+    .style("font-size", "35px")
+    .style("font-weight", "900")
     .style('font-family', 'Josefin Slab')
     .text("México Feminicida");
 
 var subtitleLayer = g.append('text')
-    .attr('x', width/2-80)             
+    .attr('x', width/2-80)
     .attr('y', 95)
-    .attr('text-anchor', "middle")  
-    .style("font-size", "20px") 
-    .style("font-weight", "500") 
+    .attr('text-anchor', "middle")
+    .style("font-size", "20px")
+    .style("font-weight", "500")
     .style('font-family', 'Josefin Slab')
     .text("(2015-2019)");
 
@@ -164,9 +164,9 @@ var dateLayer = g.append('g')
 g.append('text')
     .attr('x', width-180)
     .attr('y', 70)
-    .attr('text-anchor', "middle")  
-    .style("font-size", "20px") 
-    .style("font-weight", "500") 
+    .attr('text-anchor', "middle")
+    .style("font-size", "20px")
+    .style("font-weight", "500")
     .style('font-family', 'Lobster')
     .text("Pica un pañuelo o un Estado");
 
@@ -182,9 +182,9 @@ var paliacateLayer = g.append("svg:image")
 g.append('text')
     .attr('x', width-110)
     .attr('y', 170)
-    .attr('text-anchor', "middle")  
-    .style("font-size", "18px") 
-    .style("font-weight", "900") 
+    .attr('text-anchor', "middle")
+    .style("font-size", "18px")
+    .style("font-weight", "900")
     .style('font-family', 'Josefin Slab')
     .text("Iniciar / Parar");
 
@@ -200,20 +200,38 @@ g.append("svg:image")
 g.append('text')
     .attr('x', width-110)
     .attr('y', 280)
-    .attr('text-anchor', "middle")  
-    .style("font-size", "18px") 
-    .style("font-weight", "900") 
+    .attr('text-anchor', "middle")
+    .style("font-size", "18px")
+    .style("font-weight", "900")
     .style('font-family', 'Josefin Slab')
     .text("Mostrar / Borrar");
 
 g.append('text')
     .attr('x', width-80)
     .attr('y', height-20)
-    .attr('text-anchor', "middle")  
-    .style("font-size", "15px") 
-    .style("font-weight", "200") 
+    .attr('text-anchor', "middle")
+    .style("font-size", "15px")
+    .style("font-weight", "200")
     .style('font-family', 'Josefin Slab')
     .text("Datos de SESNSP");
+
+g.append('text')
+    .attr('x', 102)
+    .attr('y', 300)
+    .attr('text-anchor', "middle")
+    .style("font-size", "17px")
+    .style("font-weight", "200")
+    .style('font-family', 'Arial')
+    .text("Casos Totales");
+
+g.append('text')
+    .attr('x', 102)
+    .attr('y', 330)
+    .attr('text-anchor', "middle")
+    .style("font-size", "17px")
+    .style("font-weight", "200")
+    .style('font-family', 'Arial')
+    .text("3277");
 
 // Load map data
 d3.json('data/mexico_pret.json', function(error, mapData) {
