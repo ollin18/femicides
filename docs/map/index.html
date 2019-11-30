@@ -205,6 +205,14 @@ g.append('text')
     .style('font-family', 'Josefin Slab')
     .text("Mostrar / Borrar");
 
+g.append('text')
+    .attr('x', width-80)
+    .attr('y', height-20)
+    .attr('text-anchor', "middle")  
+    .style("font-size", "15px") 
+    .style("font-weight", "200") 
+    .style('font-family', 'Josefin Slab')
+    .text("Datos de SESNSP");
 
 // Load map data
 d3.json('data/mexico_pret.json', function(error, mapData) {
