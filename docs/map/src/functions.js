@@ -1,24 +1,3 @@
-// function drawDate(data){
-//     dateLayer
-//         .selectAll('g')
-//         .data(data)
-//         .enter()
-//         .append('text')
-//         .transition()
-//         .duration(300)
-//         .style('opacity', 4)
-//         .attr('x', width/2-90)             
-//         .attr('y', height-120)
-//         .attr('text-anchor', "middle")  
-//         .attr("id","dateCorner")
-//         .style("font-size", "30px") 
-//         .style("font-weight", "500") 
-//         .style('font-family', 'Josefin Slab')
-//         .text(function(d){
-//             return formatParse(d.date)
-//         })
-// }
-
 function drawDatef(data,x,y){
     dateLayer
         .selectAll('g')
@@ -126,18 +105,18 @@ function drawCross(data){
         .append("svg:image")
         .transition()
         .duration(700)
-        .style('opacity', 4)
+        .style('opacity', 1)
         .attr("x", function(d) {
-                return projection([d.lon, d.lat])[0]-d.count*5;
+                return projection([d.lon, d.lat])[0]-Math.pow(d.count,0.8)*5;
         })
         .attr("y", function(d) {
-                return projection([d.lon, d.lat])[1]-d.count*6;
+                return projection([d.lon, d.lat])[1]-Math.pow(d.count,0.8)*6;
         })
         .attr('width', function(d){
-            return d.count*15})
+            return Math.pow(d.count,0.8)*15})
         .attr('height', function(d){
-            return d.count*14})
-        .attr("xlink:href", "figs/pink_cross.svg")
+            return Math.pow(d.count,0.8)*14})
+        .attr("xlink:href", "figs/pink_cross2.png")
 }
 
 

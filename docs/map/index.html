@@ -274,6 +274,15 @@ d3.json('data/mexico_pret.json', function(error, mapData) {
 
 });
 
+g.append("text")
+  .attr('x', 175)
+  .attr('y', 610)
+  .attr('text-anchor', "middle")
+  .style("font-size", "17px")
+  .style("font-weight", "100")
+  .style('font-family', 'Arial')
+  .text("Casos Mensuales por Municipio");
+
 d3.csv("data/monthly.csv", function(error, data) {
     data.forEach(function(d){
         d.count = +d.count
@@ -281,21 +290,24 @@ d3.csv("data/monthly.csv", function(error, data) {
     var startEnd = d3.extent(data, function(d){return d.count})
     crossScale.domain([startEnd[0], startEnd[1]]);
 
-    var sizeLegend = d3.legend.size()
-        .title("Casos Mensuales por Municipio")
-        .scale(crossScale)
-        .shape("rect")
-        .orient("horizontal")
-        .labelFormat(d3.format(".0f"))
-        .cells(7)
-        .labelAlign("start")
-        .labelOffset(15)
-        .shapePadding(10)
+  var cSize;
+  for (cSize = startEnd[0]; cSize < startEnd[1] + 1; cSize++){
+    g.append("svg:image")
+        .attr('x', 30 + (30 * cSize))
+        .attr('y', 659 - (11 * Math.pow(cSize,0.8)))
+        .attr('width', Math.pow(cSize,0.8)*15)
+        .attr('height', Math.pow(cSize,0.8)*14)
+        .attr("xlink:href", "figs/pink_cross2.png")
 
-    g.append("g")
-    .attr("class", "legendSizeLine")
-    .attr("transform", "translate(50,630)")
-    .call(sizeLegend)
+    g.append("text")
+        .attr('x', 35 + (32 * cSize))
+        .attr('y', 690)
+        .attr('text-anchor', "middle")
+        .style("font-size", "17px")
+        .style("font-weight", "100")
+        .style('font-family', 'Arial')
+        .text(cSize.toString());
+}
 });
 
 var timerStart = setInterval(function(){
