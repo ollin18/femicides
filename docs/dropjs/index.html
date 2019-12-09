@@ -41,33 +41,30 @@ text.big-text{
   font-size: 12px;
 }
 
-div.tooltip {	
-    position: absolute;			
-    text-align: center;			
-    width: 120px;					
-    height: 40px;					
-    padding: 2px;				
-    font: 12px sans-serif;		
-    background: lightsteelblue;	
-    border: 0px;		
-    border-radius: 8px;			
-    pointer-events: none;			
+div.tooltip {
+    position: absolute;
+    text-align: center;
+    width: 120px;
+    height: 40px;
+    padding: 2px;
+    font: 12px sans-serif;
+    background: lightsteelblue;
+    border: 0px;
+    border-radius: 8px;
+    pointer-events: none;
 }
 
 </style>
 <body>
-<input type="checkbox" id="states">Show States <br>
-<select id="rateValue">
+<input type="checkbox" checked=true id="states">Show States <br>
+<select id="ddmenu" onchange="updateGraph()">
   <option value="Spherical" selected="selected">Spherical</option>
   <option value="Exponential">Exponential</option>
   <option value="Gaussian">Gaussian</option>
+  <option value="State">State Gaussian</option>
 </select>
 <svg></svg>
 <script src="https://d3js.org/d3.v3.min.js"></script>
-<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/1.13.0/d3-legend.min.js"></script> -->
-<!-- <script src="//d3js.org/queue.v1.min.js"></script> -->
-<!-- <script src="//d3js.org/topojson.v1.min.js"></script> -->
-<!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script> -->
 <script src="src/functions.js"></script>
 <script>
 
@@ -107,8 +104,8 @@ svg.append('rect')
 
 var g = svg.append('g');
 
-var div = d3.select("body").append("div")	
-    .attr("class", "tooltip")				
+var div = d3.select("body").append("div")
+    .attr("class", "tooltip")
     .style("opacity", 0);
 
 var mapLayer = g.append('g')
@@ -162,25 +159,15 @@ d3.select("#selectButton")
   .text("Spherical")
   .attr("value","spherical")
 
-// var models = ["Spherical", "Exponential", "Gaussian"]
-// d3.select("#rateValue")
-//   .selectAll('option')
-//   .data(models)
-//   .enter()
-//   .append('option')
-//   .text(function (d) { return d; })
-//   .attr("value", function (d) { return d; })
-
-var dropDown = d3.select("#selectButton")
-
-// dropDown.on("change", updateGraph(d3.event.target.value))
-// Load map data
 function updateGraph(){
-  d3.json('data/muni_simp.json', function(error, mapData) {
+  mapLayer.selectAll('path').remove()
+  legend.selectAll("*").remove()
+  // d3.json('data/muni_simp.json', function(error, mapData) {
+  d3.json('data/muni_2sigma_state.json', function(error, mapData) {
     var features = mapData.features;
-    var model = d3.select("#rateValue").node().value
     var rateValue = [];
 
+    var model = d3.select("#ddmenu").node().value
     features.map(function(d) {
       if (model == "Spherical"){
         rateValue.push(d.properties.rate_sph);
@@ -188,7 +175,10 @@ function updateGraph(){
         rateValue.push(d.properties.rate_exp);
       } else if (model == "Gaussian") {
         rateValue.push(d.properties.rate_gauss);
+      } else if (model == "State") {
+        rateValue.push(d.properties.rate_state);
       }
+
         // rateValue.push(d3.select("#rateValue").node().value);
     });
 
@@ -214,41 +204,54 @@ function updateGraph(){
             return color(d.properties.rate_exp);
           } else if (model == "Gaussian") {
             return color(d.properties.rate_gauss);
+          } else if (model == "State") {
+            return color(d.properties.rate_state);
           }
           // return color(d.properties.rate_sph)
         })
-        .on('mouseover',function(d) {		
+        .on('mouseover',function(d) {
           if (model == "Spherical"){
-            div.transition()		
-                .duration(100)		
-                .style("opacity", .9);		
+            div.transition()
+                .duration(100)
+                .style("opacity", .9);
             div.html(d.properties.NOMGEO + "<br/>" +
-            "rate: " + d.properties.rate_sph.toFixed(3))	
-                .style("left", (d3.event.pageX) + "px")		
-                .style("top", (d3.event.pageY - 28) + "px");	
+            "rate: " + d.properties.rate_sph.toFixed(3))
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY - 28) + "px");
           } else if (model == "Exponential"){
-            div.transition()		
-                .duration(100)		
-                .style("opacity", .9);		
+            div.transition()
+                .duration(100)
+                .style("opacity", .9);
             div.html(d.properties.NOMGEO + "<br/>" +
-            "rate: " + d.properties.rate_exp.toFixed(3))	
-                .style("left", (d3.event.pageX) + "px")		
-                .style("top", (d3.event.pageY - 28) + "px");	
+            "rate: " + d.properties.rate_exp.toFixed(3))
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY - 28) + "px");
             } else if (model == "Gaussian"){
-            div.transition()		
-                .duration(100)		
-                .style("opacity", .9);		
+            div.transition()
+                .duration(100)
+                .style("opacity", .9);
             div.html(d.properties.NOMGEO + "<br/>" +
-            "rate: " + d.properties.rate_gauss.toFixed(3))	
-                .style("left", (d3.event.pageX) + "px")		
-                .style("top", (d3.event.pageY - 28) + "px");	
+            "rate: " + d.properties.rate_gauss.toFixed(3))
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY - 28) + "px");
 
-          }})
-        .on("mouseout", function(d) {		
-              div.transition()		
-                  .duration(300)		
-                  .style("opacity", 0);	
-          });
+          } else if (model == "State"){
+            div.transition()
+                .duration(100)
+                .style("opacity", .9);
+            div.html(d.properties.NOMGEO + "<br/>" +
+            "rate: " + d.properties.rate_state.toFixed(3))
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY - 28) + "px");
+
+          }
+        })
+        .on("mouseout", function(d) {
+              div.transition()
+                  .duration(300)
+                  .style("opacity", 0);
+          })
+          .on("click",clicked)
 
   // LEGEND //////////////////////////////////////////
     var divisions = 100,
@@ -324,7 +327,8 @@ function update(){
   }
 }
 
-dropDown.append("select").on("change",updateGraph);
+var dropDown = d3.select("#ddmenu")
+dropDown.on("change",updateGraph());
 updateGraph()
 
 </script>

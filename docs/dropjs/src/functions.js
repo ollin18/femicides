@@ -72,32 +72,20 @@ function clicked(d) {
     var centroid = path.centroid(d);
     x = centroid[0];
     y = centroid[1];
-    k = 3;
+    k = 5;
     centered = d;
-    dateX = x;
-    dateY = y - 50;
   } else {
     x = width / 2;
     y = height / 2;
     k = 1;
     centered = null;
-    dateX = width / 2 - 90;
-    dateY = height - 120;
   }
-
-  // Highlight the clicked province
-  mapLayer.selectAll('path')
-    .style('fill', function(d){return centered && d===centered ? '#8a0303' : fillFn(d);});
 
   // Zoom
   g.transition()
     .duration(750)
     .attr('transform', 'translate(' + width / 2 + ',' + height / 2 + ')scale(' + k + ')translate(' + -x + ',' + -y + ')');
 
-  dateLayer.selectAll("*").transition()
-    .duration(650)
-    .attr('x', dateX)             
-    .attr('y', dateY)
 }
 
 function drawCross(data){
