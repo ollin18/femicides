@@ -7,12 +7,12 @@ function drawDatef(data,x,y){
         .transition()
         .duration(300)
         .style('opacity', 4)
-        .attr('x', x)             
+        .attr('x', x)
         .attr('y', y)
-        .attr('text-anchor', "middle")  
+        .attr('text-anchor', "middle")
         .attr("id","dateCorner")
-        .style("font-size", "30px") 
-        .style("font-weight", "500") 
+        .style("font-size", "30px")
+        .style("font-weight", "500")
         .style('font-family', 'Josefin Slab')
         .text(function(d){
             return formatParse(d.date)
@@ -93,7 +93,7 @@ function clicked(d) {
 
   dateLayer.selectAll("*").transition()
     .duration(650)
-    .attr('x', dateX)             
+    .attr('x', dateX)
     .attr('y', dateY)
 }
 

@@ -235,7 +235,7 @@ g.append('text')
     .style("font-size", "17px")
     .style("font-weight", "200")
     .style('font-family', 'Arial')
-    .text("3277");
+    .text("3,277");
 
 // Load map data
 d3.json('data/mexico_pret.json', function(error, mapData) {
@@ -255,23 +255,53 @@ d3.json('data/mexico_pret.json', function(error, mapData) {
       .on('mouseout', mouseout)
       .on('click', clicked);
 
-    var colorLegend = d3.legend.color()
-        .title("Casos Totales por Estado")
-        .labelAlign("middle")
-        .labelFormat(d3.format(".0f"))
-        .scale(color)
-        .ascending(true)
-        .cells(6)
-        .labels(["0","90","180","270","360","450"])
-        .shapePadding(5)
-        .shapeWidth(30)
-        .shapeHeight(20)
-        .labelOffset(10)
+    var divisions = 100,
+        legend_width = 200;
 
-    g.append("g")
-    .attr("transform", "translate(50,400)")
-    .call(colorLegend)
+    var newData = [];
+    var sectionWidth = Math.floor(legend_width / divisions);
 
+    for (var i=0; i < legend_width; i+= sectionWidth ) {
+        newData.push(i);
+    }
+
+    var colorScaleLin = d3.scale
+          .pow().exponent(0.5)
+          .domain([0, newData.length-1])
+          .clamp(true)
+          .range([d3.rgb('#f3faf3'), d3.rgb('#004303')])
+          .interpolate(d3.interpolateLab)
+
+    g.selectAll('rect')
+        .data(newData)
+        .enter()
+        .append('rect')
+            .attr("x", 102)
+            .attr("y", function(d) { return -d*0.8 + 570; })
+            .attr("height", 10)
+            .attr("width", 7*sectionWidth)
+            .attr('fill', function(d, i) { return colorScaleLin(i)});
+
+    g.append("text")
+    .attr('x',120)
+    .attr('y',-d3.max(newData) + 771)
+    .text(d3.min(features, fem_num).toString())
+    .style("font-size", "15px");
+
+    g.append("text")
+    .attr('x',120)
+    .attr('y',-d3.min(newData) + 425)
+    .text(d3.max(features, fem_num).toString())
+    .style("font-size", "15px");
+
+    g.append("text")
+    .attr('x',140)
+    .attr('y',-d3.max(newData) + 600)
+    .attr('text-anchor', "middle")
+    .style("font-size", "17px")
+    .style("font-weight", "100")
+    .style('font-family', 'Arial')
+    .text("Casos Estatales Totales")
 });
 
 g.append("text")
