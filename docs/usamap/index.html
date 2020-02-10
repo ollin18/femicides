@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta property="og:site_name" content="Mapa de Feminicidios"/>
+<meta property="og:title" content="Mapa de feminicidios mensuales en México 2015-2019"/>
+<meta property="og:image" content="https://olangle.w3.uvm.edu/femicides/figs/thumbnailmap.jpg">
+<meta property="og:url" content="https://ollin18.github.io/femicides/map/">
+<meta name="twitter:image" content="https://olangle.w3.uvm.edu/femicides/figs/thumbnailmap.jpg">
+</head>
+
+<style>
+
+@import url(https://fonts.googleapis.com/css?family=Open+Sans+Condensed:300|Josefin+Slab|Arvo|Lato|Vollkorn|Abril+Fatface|Old+Standard+TT|Droid+Sans|Lobster|Inconsolata|Montserrat|Playfair+Display|Karla|Alegreya|Libre+Baskerville|Merriweather|Lora|Archivo+Narrow|Neuton|Signika|Questrial|Fjalla+One|Bitter|Varela+Round);
+
+.background {
+  fill: #eee;
+  pointer-events: all;
+}
+
+.map-layer {
+  fill: #fff;
+  stroke: #aaa;
+}
+
+.effect-layer{
+  pointer-events:none;
+}
+
+text{
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 300;
+}
+
+text.big-text{
+  font-size: 23px;
+  font-weight: 380;
+}
+
+.effect-layer text, text.dummy-text{
+  font-size: 12px;
+}
+
+</style>
+<body>
+
+<input id="slider" type="range" min="2003" max="2017" value="2003" step="1" onchange="updateGraph()"/>
+<span id="range">2003</span>
+<svg></svg>
+<script src="https://d3js.org/d3.v3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/1.13.0/d3-legend.min.js"></script>
+<script src="https://d3js.org/topojson.v1.min.js"></script>
+<script src="src/functions.js"></script>
+<script type="text/javascript">
+	
+  onload = function() {
+    var $ = function(id) { return document.getElementById(id); };
+    $('slider').oninput = function() { $('range').innerHTML = this.value; };
+    $('slider').oninput();
+  };
+
+	</script>
+
+<script>
+
+ var es_ES = {
+        "decimal": ",",
+        "thousands": ".",
+        "grouping": [3],
+        "currency": ["€", ""],
+        "dateTime": "%a %b %e %X %Y",
+        "date": "%d/%m/%Y",
+        "time": "%H:%M:%S",
+        "periods": ["AM", "PM"],
+        "days": ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"],
+        "shortDays": ["Dom", "Lun", "Mar", "Mi", "Jue", "Vie", "Sab"],
+        "months": ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"],
+        "shortMonths": ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+    };
+
+var ES = d3.locale(es_ES);
+
+var width = 1080,
+    height = 720,
+    centered;
+
+var dateX=width/2-90;
+var dateY=height-120;
+
+var t = 0;
+var animated = 1;
+var estan = null;
+// var parser = d3.time.format("%Y-%m-%d").parse;
+var parser = d3.time.format("%Y").parse;
+var formatParse = ES.timeFormat('%Y');
+
+// Define the array for the names
+var namesF = [];
+var femLon = [];
+var femLat = [];
+
+// Define color scale
+var color = d3.scale//.linear()
+  .pow().exponent(0.5)
+  .clamp(true)
+//   .domain([0, 424])
+  .domain([0, 4])
+//   .range([d3.rgb('#cce6cd'), d3.rgb('#004303')])
+  .range([d3.rgb('#f3faf3'), d3.rgb('#004303')])
+  .nice();
+
+var crossScale = d3.scale
+  .linear()
+  .domain([1,4])
+  .range([2,10])
+
+
+var projection = d3.geo.albersUsa()
+// var projection = d3.geo.mercator()
+  .scale(800)
+  .translate([width / 2, height / 2]);
+
+var path = d3.geo.path()
+  .projection(projection);
+
+// Set svg width & height
+var svg = d3.select('svg')
+  .attr('width', width)
+  .attr('height', height);
+
+// Add background
+svg.append('rect')
+  .attr('class', 'background')
+  .attr('width', width)
+  .attr('height', height)
+  .on('click', clicked);
+
+var g = svg.append('g');
+
+var effectLayer = g.append('g')
+  .classed('effect-layer', true);
+
+var mapLayer = g.append('g')
+  .classed('map-layer', true);
+
+var legend = g.append("g")
+  .attr("class", "legend")
+  .attr('x', 20)
+  .attr('y', 20)
+
+var dummyText = g.append('text')
+  .classed('dummy-text', true)
+  .attr('x', 10)
+  .attr('y', 30)
+  .style('opacity', 0);
+
+var bigText = g.append('text')
+  .classed('big-text', true)
+  .attr('x', width/2-80)
+  .attr('y', 135);
+
+var titleLayer = g.append('text')
+    .attr('x', width/2-80)
+    .attr('y', 70)
+    .attr('text-anchor', "middle")
+    .style("font-size", "35px")
+    .style("font-weight", "900")
+    .style('font-family', 'Josefin Slab')
+    .text("Opioid Deaths");
+
+var subtitleLayer = g.append('text')
+    .attr('x', width/2-80)
+    .attr('y', 95)
+    .attr('text-anchor', "middle")
+    .style("font-size", "20px")
+    .style("font-weight", "500")
+    .style('font-family', 'Josefin Slab')
+    .text("(2003-2017)");
+
+var crossLayer = g.append('g')
+
+g.append('text')
+    .attr('x', width-80)
+    .attr('y', height-20)
+    .attr('text-anchor', "middle")
+    .style("font-size", "15px")
+    .style("font-weight", "200")
+    .style('font-family', 'Josefin Slab')
+    .text("Data from CDC");
+
+// Load map data
+function updateGraph(){
+  var year = d3.selectAll("#slider").node().value
+  mapLayer.selectAll('path').remove()
+  crossLayer.selectAll('*').remove()
+
+  d3.json('data/county_data.json', function(error, mapData) {
+    var features = mapData.features;
+    var rateValue = [];
+
+
+    // Update color scale domain based on data
+    color.domain([5.897847,42.2633]);
+
+    // Draw each State as a path
+    mapLayer.selectAll('path')
+        .data(features)
+        .enter().append('path')
+        .attr('d', path)
+        .attr('vector-effect', 'non-scaling-stroke')
+        .style('fill', function(d){
+            if (year == "2003"){
+              return color(d.properties.three);
+            } else if (year == "2004"){
+              return color(d.properties.four);
+            } else if (year == "2005"){
+              return color(d.properties.five);
+            } else if (year == "2006"){
+              return color(d.properties.six);
+            } else if (year == "2007"){
+              return color(d.properties.seven);
+            } else if (year == "2008"){
+              return color(d.properties.eight);
+            } else if (year == "2009"){
+              return color(d.properties.nine);
+            } else if (year == "2010"){
+              return color(d.properties.ten);
+            } else if (year == "2011"){
+              return color(d.properties.eleven);
+            } else if (year == "2012"){
+              return color(d.properties.twelve);
+            } else if (year == "2013"){
+              return color(d.properties.thirteen);
+            } else if (year == "2014"){
+              return color(d.properties.fourteen);
+            } else if (year == "2015"){
+              return color(d.properties.fifteen);
+            } else if (year == "2016"){
+              return color(d.properties.sixteen);
+            } else if (year == "2017"){
+              return color(d.properties.seventeen);
+            }
+          })
+        .on('mouseover', function(d){
+            d3.select(this).style('fill', '#8a0303');
+            if (year == "2003"){
+            textState(nameFn(d)+" - "+d.properties.three.toFixed(2).toString());
+            } else if (year == "2004"){
+            textState(nameFn(d)+" - "+d.properties.four.toFixed(2).toString());
+            } else if (year == "2005"){
+            textState(nameFn(d)+" - "+d.properties.five.toFixed(2).toString());
+            } else if (year == "2006"){
+            textState(nameFn(d)+" - "+d.properties.six.toFixed(2).toString());
+            } else if (year == "2007"){
+            textState(nameFn(d)+" - "+d.properties.seven.toFixed(2).toString());
+            } else if (year == "2008"){
+            textState(nameFn(d)+" - "+d.properties.eight.toFixed(2).toString());
+            } else if (year == "2009"){
+            textState(nameFn(d)+" - "+d.properties.nine.toFixed(2).toString());
+            } else if (year == "2010"){
+            textState(nameFn(d)+" - "+d.properties.ten.toFixed(2).toString());
+            } else if (year == "2011"){
+            textState(nameFn(d)+" - "+d.properties.eleven.toFixed(2).toString());
+            } else if (year == "2012"){
+            textState(nameFn(d)+" - "+d.properties.twelve.toFixed(2).toString());
+            } else if (year == "2013"){
+            textState(nameFn(d)+" - "+d.properties.thirteen.toFixed(2).toString());
+            } else if (year == "2014"){
+            textState(nameFn(d)+" - "+d.properties.fourteen.toFixed(2).toString());
+            } else if (year == "2015"){
+            textState(nameFn(d)+" - "+d.properties.fifteen.toFixed(2).toString());
+            } else if (year == "2016"){
+            textState(nameFn(d)+" - "+d.properties.sixteen.toFixed(2).toString());
+            } else if (year == "2017"){
+            textState(nameFn(d)+" - "+d.properties.seventeen.toFixed(2).toString());
+            }
+          })
+        .on('mouseout', function(d){
+            bigText.text('');
+            d3.select(this).style('fill', '#8a0303');
+            if (year == "2003"){
+            mapLayer.selectAll('path').style('fill', function(d){return centered && d===centered ? '#D5708B' : color(d.properties.three);});
+            } else if (year == "2004"){
+            mapLayer.selectAll('path').style('fill', function(d){return centered && d===centered ? '#D5708B' : color(d.properties.four);});
+            } else if (year == "2005"){
+            mapLayer.selectAll('path').style('fill', function(d){return centered && d===centered ? '#D5708B' : color(d.properties.five);});
+            } else if (year == "2006"){
+            mapLayer.selectAll('path').style('fill', function(d){return centered && d===centered ? '#D5708B' : color(d.properties.six);});
+            } else if (year == "2007"){
+            mapLayer.selectAll('path').style('fill', function(d){return centered && d===centered ? '#D5708B' : color(d.properties.seven);});
+            } else if (year == "2008"){
+            mapLayer.selectAll('path').style('fill', function(d){return centered && d===centered ? '#D5708B' : color(d.properties.eigth);});
+            } else if (year == "2009"){
+            mapLayer.selectAll('path').style('fill', function(d){return centered && d===centered ? '#D5708B' : color(d.properties.nine);});
+            } else if (year == "2010"){
+            mapLayer.selectAll('path').style('fill', function(d){return centered && d===centered ? '#D5708B' : color(d.properties.ten);});
+            } else if (year == "2011"){
+            mapLayer.selectAll('path').style('fill', function(d){return centered && d===centered ? '#D5708B' : color(d.properties.eleven);});
+            } else if (year == "2012"){
+            mapLayer.selectAll('path').style('fill', function(d){return centered && d===centered ? '#D5708B' : color(d.properties.twelve);});
+            } else if (year == "2013"){
+            mapLayer.selectAll('path').style('fill', function(d){return centered && d===centered ? '#D5708B' : color(d.properties.thirteen);});
+            } else if (year == "2014"){
+            mapLayer.selectAll('path').style('fill', function(d){return centered && d===centered ? '#D5708B' : color(d.properties.fourteen);});
+            } else if (year == "2015"){
+            mapLayer.selectAll('path').style('fill', function(d){return centered && d===centered ? '#D5708B' : color(d.properties.fifteen);});
+            } else if (year == "2016"){
+            mapLayer.selectAll('path').style('fill', function(d){return centered && d===centered ? '#D5708B' : color(d.properties.sixteen);});
+            } else if (year == "2017"){
+            mapLayer.selectAll('path').style('fill', function(d){return centered && d===centered ? '#D5708B' : color(d.properties.seventeen);});
+            }
+          })
+        .on('click', clicked);
+  });
+}
+
+function mouseout(d){
+  // Reset State color
+  mapLayer.selectAll('path')
+    .style('fill', function(d){return centered && d===centered ? '#D5708B' : fillFn(d);});
+  // Clear State name
+  bigText.text('');
+}
+
+var divisions = 100,
+    legend_width = 200;
+
+var newData = [];
+var sectionWidth = Math.floor(legend_width / divisions);
+
+for (var i=0; i < legend_width; i+= sectionWidth ) {
+    newData.push(i);
+}
+
+var colorScaleLin = d3.scale
+      .pow().exponent(0.5)
+      .domain([0, newData.length-1])
+      .clamp(true)
+      .range([d3.rgb('#f3faf3'), d3.rgb('#004303')])
+      .interpolate(d3.interpolateLab)
+
+g.selectAll('rect')
+    .data(newData)
+    .enter()
+    .append('rect')
+        .attr("x", 102)
+        .attr("y", function(d) { return -d*0.8 + 420; })
+        .attr("height", 10)
+        .attr("width", 7*sectionWidth)
+        .attr('fill', function(d, i) { return colorScaleLin(i)});
+
+legend.append("text")
+.attr('x',120)
+.attr('y',-d3.max(newData) + 621)
+.text(Math.floor(5.897847).toString())
+.style("font-size", "15px");
+
+legend.append("text")
+.attr('x',120)
+.attr('y',-d3.min(newData) + 275)
+.text(Math.ceil(42.2633).toString())
+.style("font-size", "15px");
+
+legend.append("text")
+  .attr('x',140)
+  .attr('y',-d3.max(newData) + 450)
+  .attr('text-anchor', "middle")
+  .style("font-size", "17px")
+  .style("font-weight", "100")
+  .style('font-family', 'Arial')
+  .text("Death Rate")
+
+var barrita = d3.select("#slider")
+barrita.on("change",updateGraph());
+updateGraph()
+
+</script>
+</body>
+</html>

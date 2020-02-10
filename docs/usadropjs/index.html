@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta property="og:site_name" content="Mapa de Feminicidios"/>
+<meta property="og:title" content="Mapa de feminicidios mensuales en México 2015-2019"/>
+<meta property="og:image" content="https://olangle.w3.uvm.edu/femicides/figs/thumbnailmap.jpg">
+<meta property="og:url" content="https://ollin18.github.io/femicides/map/">
+<meta name="twitter:image" content="https://olangle.w3.uvm.edu/femicides/figs/thumbnailmap.jpg">
+</head>
+
+<style>
+
+@import url(https://fonts.googleapis.com/css?family=Open+Sans+Condensed:300|Josefin+Slab|Arvo|Lato|Vollkorn|Abril+Fatface|Old+Standard+TT|Droid+Sans|Lobster|Inconsolata|Montserrat|Playfair+Display|Karla|Alegreya|Libre+Baskerville|Merriweather|Lora|Archivo+Narrow|Neuton|Signika|Questrial|Fjalla+One|Bitter|Varela+Round);
+
+.background {
+  fill: #fff;
+  pointer-events: all;
+}
+
+.map-layer {
+  fill: #3f3f3f;
+  stroke: #aaa;
+}
+
+.effect-layer{
+  pointer-events:none;
+}
+
+text{
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-weight: 300;
+}
+
+text.big-text{
+  font-size: 23px;
+  font-weight: 380;
+}
+
+.effect-layer text, text.dummy-text{
+  font-size: 12px;
+}
+
+div.tooltip {
+    position: absolute;
+    text-align: center;
+    width: 120px;
+    height: 40px;
+    padding: 2px;
+    font: 12px sans-serif;
+    background: lightsteelblue;
+    border: 0px;
+    border-radius: 8px;
+    pointer-events: none;
+}
+
+</style>
+<body>
+<input type="checkbox" checked=true id="states">Show States <br>
+<select id="ddmenu" onchange="updateGraph()">
+  <option value="Education" selected="selected">Education</option>
+  <option value="Obesity">Obesity</option>
+  <option value="Life">Life</option>
+  <option value="Unemployment">Unemployment</option>
+  <option value="Rank">Rank</option>
+</select>
+<svg></svg>
+<script src="https://d3js.org/d3.v3.min.js"></script>
+<script src="https://d3js.org/topojson.v1.min.js"></script>
+<script src="src/functions.js"></script>
+<script>
+
+d3.select("#states").on("change",update);
+update();
+
+var width = 1080,
+    height = 720,
+    centered;
+
+var parser = d3.time.format("%Y-%m-%d").parse;
+
+
+// Define color scale
+var mexCent = [-111.5, 34.5]
+
+// var projection = d3.geo.mercator()
+var projection = d3.geo.albersUsa()
+  .scale(800)
+  // Center the Map in Mexico
+  // .center(mexCent)
+  .translate([width / 2, height / 2]);
+
+var path = d3.geo.path()
+  .projection(projection);
+
+// Set svg width & height
+var svg = d3.select('svg')
+  .attr('width', width)
+  .attr('height', height);
+
+// Add background
+svg.append('rect')
+  .attr('class', 'background')
+  .attr('width', width)
+  .attr('height', height)
+  .on('click', clicked);
+
+var g = svg.append('g');
+
+var div = d3.select("body").append("div")
+    .attr("class", "tooltip")
+    .style("opacity", 0);
+
+var mapLayer = g.append('g')
+  .classed('map-layer', true);
+
+var stateLayer = g.append('g')
+  .classed('map-layer', true);
+
+var legend = g.append("g")
+  .attr("class", "legend")
+  .attr('x', 20)
+  .attr('y', 20)
+
+
+var bigText = g.append('text')
+  .classed('big-text', true)
+  .attr('x', width/2-80)
+  .attr('y', 135);
+
+var titleLayer = g.append('text')
+    .attr('x', width/2-80)
+    .attr('y', 70)
+    .attr('text-anchor', "middle")
+    .style("font-size", "35px")
+    .style("font-weight", "900")
+    .style('font-family', 'Josefin Slab')
+    .text("U.S.A. Statistics");
+
+var subtitleLayer = g.append('text')
+    .attr('x', width/2-80)
+    .attr('y', 95)
+    .attr('text-anchor', "middle")
+    .style("font-size", "20px")
+    .style("font-weight", "500")
+    .style('font-family', 'Josefin Slab')
+    .text("< 2014");
+
+
+g.append('text')
+    .attr('x', width-80)
+    .attr('y', height-20)
+    .attr('text-anchor', "middle")
+    .style("font-size", "15px")
+    .style("font-weight", "200")
+    .style('font-family', 'Josefin Slab')
+    .text("Data from census.gov");
+
+d3.select("#selectButton")
+  .selectAll('MyOptions')
+  .append('option')
+  .text("Education")
+  .attr("value","education")
+
+function updateGraph(){
+  mapLayer.selectAll('path').remove()
+  legend.selectAll("*").remove()
+  // d3.json('data/muni_simp.json', function(error, mapData) {
+  // d3.json('data/muni_2sigma_state.json', function(error, mapData) {
+  d3.json('data/us_counties.json', function(error, mapData) {
+    var features = mapData.features;
+    var rateValue = [];
+
+    var model = d3.select("#ddmenu").node().value
+    features.map(function(d) {
+      if (model == "Education"){
+        rateValue.push(d.properties.education);
+      } else if (model == "Obesity"){
+        rateValue.push(d.properties.obesity);
+      } else if (model == "Life") {
+        rateValue.push(d.properties.life);
+      } else if (model == "Unemployment") {
+        rateValue.push(d.properties.unemployment);
+      } else if (model == "Rank") {
+        rateValue.push(d.properties.rank);
+      }
+
+
+        // rateValue.push(d3.select("#rateValue").node().value);
+    });
+
+    var color = d3.scale
+          .linear()
+          // .pow().exponent(0.5)
+          .domain([d3.min(rateValue),d3.max(rateValue)])
+          .clamp(true)
+          // .range([d3.rgb('#1a69d3'), d3.rgb('#9a190c')])
+          .range([d3.rgb('#f9f1eb'), d3.rgb('#dc7c2b')])
+          .interpolate(d3.interpolateLab)
+
+    mapLayer.selectAll('path')
+        .data(features)
+        .enter().append('path')
+        .attr('d', path)
+        .attr('vector-effect', 'non-scaling-stroke')
+        .attr('stroke-width', 0.001)
+        .attr('stroke', "#ffffff")
+        .style('fill', function(d) {
+          if (model == "Education"){
+            return color(d.properties.education);
+          } else if (model == "Obesity"){
+            return color(d.properties.obesity);
+          } else if (model == "Life") {
+            return color(d.properties.life);
+          } else if (model == "Unemployment") {
+            return color(d.properties.unemployment);
+          } else if (model == "Rank") {
+            return color(d.properties.rank);
+          }
+          // return color(d.properties.rate_sph)
+        })
+        .on('mouseover',function(d) {
+          if (model == "Education"){
+            div.transition()
+                .duration(100)
+                .style("opacity", .9);
+            div.html(d.properties.County + "<br/>" +
+            "Percentage: " + d.properties.education.toFixed(1))
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY - 28) + "px");
+          } else if (model == "Obesity"){
+            div.transition()
+                .duration(100)
+                .style("opacity", .9);
+            div.html(d.properties.County + "<br/>" +
+            "Percentage: " + d.properties.obesity.toFixed(1))
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY - 28) + "px");
+            } else if (model == "Life"){
+            div.transition()
+                .duration(100)
+                .style("opacity", .9);
+            div.html(d.properties.County + "<br/>" +
+            "Percentage: " + d.properties.life.toFixed(1))
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY - 28) + "px");
+
+          } else if (model == "Unemployment"){
+            div.transition()
+                .duration(100)
+                .style("opacity", .9);
+            div.html(d.properties.County + "<br/>" +
+            "Percentage: " + d.properties.unemployment.toFixed(1))
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY - 28) + "px");
+
+          } else if (model == "Rank"){
+            div.transition()
+                .duration(100)
+                .style("opacity", .9);
+            div.html(d.properties.County + "<br/>" +
+            "Percentage: " + d.properties.rank.toFixed(1))
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY - 28) + "px");
+
+          }
+        })
+        .on("mouseout", function(d) {
+              div.transition()
+                  .duration(300)
+                  .style("opacity", 0);
+          })
+          .on("click",clicked)
+
+  // LEGEND //////////////////////////////////////////
+    var divisions = 100,
+        legend_width = 200;
+
+    var newData = [];
+    var sectionWidth = Math.floor(legend_width / divisions);
+
+    for (var i=0; i < legend_width; i+= sectionWidth ) {
+        newData.push(i);
+    }
+
+    var colorScaleLin = d3.scale
+          // .linear()
+          .pow().exponent(0.5)
+          .domain([0, newData.length-1])
+          .clamp(true)
+          // .range([d3.rgb('#1a69d3'), d3.rgb('#9a190c')])
+          .range([d3.rgb('#f9f1eb'), d3.rgb('#dc7c2b')])
+          .interpolate(d3.interpolateLab)
+
+    legend.selectAll('rect')
+        .data(newData)
+        .enter()
+        .append('rect')
+            .attr("x", 150)
+            .attr("y", function(d) { return -d + 450; })
+            .attr("height", 10)
+            .attr("width", 7*sectionWidth)
+            .attr('fill', function(d, i) { return colorScaleLin(i)});
+
+    legend.append("text")
+    .attr('x',165)
+    .attr('y',-d3.min(newData) + 459)
+    .text(d3.min(rateValue).toFixed(0).toString())
+    .attr("transform","translate(0,0)")
+    .style("font-size", "10px");
+
+    legend.append("text")
+    .attr('x',165)
+    .attr('y',-d3.max(newData) + 460)
+    .text(d3.max(rateValue).toFixed(0).toString())
+    .attr("transform","translate(0,0)")
+    .style("font-size", "10px");
+
+    legend.append("text")
+    .attr('x',80)
+    .attr('y',-d3.max(newData) + 435)
+    .text("Population percentage")
+    .attr("transform","translate(0,0)")
+    .style("font-size", "15px");
+
+  });
+}
+
+function update(){
+  if (d3.select("#states").property("checked")){
+    d3.json('data/states.json', function(error, mapData) {
+    // d3.json('data/mexico_pret.json', function(error, mapData) {
+      var features = mapData.features;
+
+      stateLayer.selectAll('path')
+          .data(features)
+          .enter().append('path')
+          .attr('d', path)
+          .attr('vector-effect', 'non-scaling-stroke')
+          .attr('stroke-width', 1.3)
+          .attr('stroke', "#999")
+          .style('fill', "none")
+          .attr("pointer-events", "visibleStroke");
+    });
+  } else {
+    stateLayer.selectAll('path')
+    .remove()
+  }
+}
+
+var dropDown = d3.select("#ddmenu")
+dropDown.on("change",updateGraph());
+updateGraph()
+
+</script>
+</body>
+</html>
