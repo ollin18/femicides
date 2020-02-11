@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+	.county-border {
+		fill: none;
+		stroke: white;
+		pointer-events: none;
+	}
+	.axis text {
+		font: 10px sans-serif;
+	}
+
+	.axis line, .axis path {
+		fill: none;
+		stroke: #000;
+		shape-rendering: crispEdges;
+	}
+</style>
+<html>
+	<body>
+		<input id="slider" type="range" min="2003" max="2017" value="2003" step="1" />
+
+		<span id="range">2003</span>
+		<script src="https://d3js.org/d3.v3.min.js"></script>
+		<script src="https://d3js.org/topojson.v1.min.js"></script>
+		<script src="https://raw.github.com/fryn/html5slider/master/html5slider.js"></script>
+        <script src="src/functions.js"></script>
+            <script type="text/javascript">
+	
+onload = function() {
+  var $ = function(id) { return document.getElementById(id); };
+  $('slider').oninput = function() { $('range').innerHTML = this.value; };
+  $('slider').oninput();
+};
+
+	</script>
+		<script>
+			//choropleth
+			// var width = 800, height = 400;
+            var width = 1080,
+                height = 720,
+                centered;
+
+			var value;
+
+			var color = d3.scale.linear().domain([7, 25]).range(["#F7FBFF", "#08306B"]);
+
+            var projection = d3.geo.albersUsa()
+            .scale(800)
+            .translate([width / 2, height / 2]);
+
+            var path = d3.geo.path()
+            .projection(projection);
+
+
+            var svg = d3.select('svg')
+            .attr('width', width)
+            .attr('height', height);
+
+            // Add background
+            svg.append('rect')
+            .attr('class', 'background')
+            .attr('width', width)
+            .attr('height', height)
+            .on('click', clicked);
+
+            var g = svg.append('g');
+
+            var mapLayer = g.append('g')
+            .classed('map-layer', true);
+			// var projection = d3.geo.conicConformal().parallels([35 + 34 / 60, 90 + 46 / 60]).rotate([98 + 00 / 60, -35 + 00 / 60]).translate([width / 2, height / 2]);
+
+			// var path = d3.geo.path().projection(projection);
+
+			// var svg = d3.select("body").append("svg").attr("width", width).attr("height", height);
+
+			d3.json("states_data.json", function(error, mapData) {
+                var features = mapData.features;
+				// var counties = topojson.feature(ok, ok.objects.counties);
+
+				// projection.scale(1).translate([0, 0]);
+
+				// var b = path.bounds(counties), s = .95 / Math.max((b[1][0] - b[0][0]) / width, (b[1][1] - b[0][1]) / height), t = [(width - s * (b[1][0] + b[0][0])) / 2, (height - s * (b[1][1] + b[0][1])) / 2];
+
+				// projection.scale(s).translate(t);
+
+                mapLayer.selectAll('path')
+                    .data(features)
+                    .enter().append('path')
+                    .attr('d', path)
+                    .attr('vector-effect', 'non-scaling-stroke')
+                    .style("fill", function(d) {
+                        return color(d.properties.three);
+                    })
+                    .on('mouseover', mouseover)
+                    .on('mouseout', mouseout)
+                    .on('click', clicked);
+
+
+				d3.selectAll("input").on("change", function change() {
+					var value = this.value;
+
+					d3.selectAll("path").style("fill", function(d) {
+						switch (value) {
+                            case "2003":
+                                return color(d.properties.three);
+                            break;
+                            case "2004":
+                                return color(d.properties.four);
+                            break;
+                            case "2005":
+                                return color(d.properties.five);
+                            break;
+                            case "2006":
+                                return color(d.properties.six);
+                            break;
+                            case "2007":
+                                return color(d.properties.seven);
+                            break;
+                            case "2008":
+                                return color(d.properties.eight);
+                            break;
+                            case "2009":
+                                return color(d.properties.nine);
+                            break;
+                            case "2010":
+                                return color(d.properties.ten);
+                            break;
+                            case "2011":
+                                return color(d.properties.eleven);
+                            break;
+                            case "2012":
+                                return color(d.properties.twelve);
+                            break;
+                            case "2013":
+                                return color(d.properties.thirteen);
+                            break;
+                            case "2014":
+                                return color(d.properties.fourteen);
+                            break;
+                            case "2015":
+                                return color(d.properties.fifteen);
+                            break;
+                            case "2016":
+                                return color(d.properties.sixteen);
+                            break;
+                            case "2017":
+                                return color(d.properties.seventeen);
+                            break;
+
+						}
+					});
+				});
+
+			});
+			//end choropleth
+
+			//key
+			var w = 140, h = 400;
+
+			var key = d3.select("body").append("svg").attr("id", "key").attr("width", w).attr("height", h);
+
+			var legend = key.append("defs").append("svg:linearGradient").attr("id", "gradient").attr("x1", "100%").attr("y1", "0%").attr("x2", "100%").attr("y2", "100%").attr("spreadMethod", "pad");
+
+			legend.append("stop").attr("offset", "0%").attr("stop-color", "#08306B").attr("stop-opacity", 1);
+
+			legend.append("stop").attr("offset", "100%").attr("stop-color", "#F7FBFF").attr("stop-opacity", 1);
+
+			key.append("rect").attr("width", w - 100).attr("height", h - 100).style("fill", "url(#gradient)").attr("transform", "translate(0,10)");
+
+			var y = d3.scale.linear().range([300, 0]).domain([7, 25]);
+
+			var yAxis = d3.svg.axis().scale(y).orient("right");
+
+			key.append("g").attr("class", "y axis").attr("transform", "translate(41,10)").call(yAxis).append("text").attr("transform", "rotate(-90)").attr("y", 30).attr("dy", ".71em").style("text-anchor", "end").text("Student teacher ratio");
+			//end key
+
+			d3.select(self.frameElement).style("height", height + "px");
+
+		</script>
+
+	</body>
+</html>
