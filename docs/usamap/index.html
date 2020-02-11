@@ -14,12 +14,12 @@
 @import url(https://fonts.googleapis.com/css?family=Open+Sans+Condensed:300|Josefin+Slab|Arvo|Lato|Vollkorn|Abril+Fatface|Old+Standard+TT|Droid+Sans|Lobster|Inconsolata|Montserrat|Playfair+Display|Karla|Alegreya|Libre+Baskerville|Merriweather|Lora|Archivo+Narrow|Neuton|Signika|Questrial|Fjalla+One|Bitter|Varela+Round);
 
 .background {
-  fill: #eee;
+  fill: #fff;
   pointer-events: all;
 }
 
 .map-layer {
-  fill: #fff;
+  fill: #000000;
   stroke: #aaa;
 }
 
@@ -44,6 +44,7 @@ text.big-text{
 </style>
 <body>
 
+<input type="checkbox" checked=true id="states">Show States <br>
 <input id="slider" type="range" min="2003" max="2017" value="2003" step="1" onchange="updateGraph()"/>
 <span id="range">2003</span>
 <svg></svg>
@@ -80,6 +81,9 @@ text.big-text{
 
 var ES = d3.locale(es_ES);
 
+d3.select("#states").on("change",update);
+update();
+
 var width = 1080,
     height = 720,
     centered;
@@ -101,7 +105,7 @@ var femLat = [];
 
 // Define color scale
 var color = d3.scale//.linear()
-  .pow().exponent(0.5)
+  .pow().exponent(0.1)
   .clamp(true)
 //   .domain([0, 424])
   .domain([0, 4])
@@ -143,6 +147,9 @@ var effectLayer = g.append('g')
 var mapLayer = g.append('g')
   .classed('map-layer', true);
 
+var stateLayer = g.append('g')
+  .classed('map-layer', true);
+
 var legend = g.append("g")
   .attr("class", "legend")
   .attr('x', 20)
@@ -156,7 +163,7 @@ var dummyText = g.append('text')
 
 var bigText = g.append('text')
   .classed('big-text', true)
-  .attr('x', width/2-80)
+  .attr('x', width/2-90)
   .attr('y', 135);
 
 var titleLayer = g.append('text')
@@ -191,16 +198,16 @@ g.append('text')
 // Load map data
 function updateGraph(){
   var year = d3.selectAll("#slider").node().value
-  mapLayer.selectAll('path').remove()
-  crossLayer.selectAll('*').remove()
+  mapLayer.selectAll('path')
+        .remove()
+  // crossLayer.selectAll('*').remove()
 
-  d3.json('data/county_data.json', function(error, mapData) {
+  d3.json('data/county_data_fixed.json', function(error, mapData) {
     var features = mapData.features;
     var rateValue = [];
 
-
     // Update color scale domain based on data
-    color.domain([5.897847,42.2633]);
+    color.domain([2.2413,130.2474]);
 
     // Draw each State as a path
     mapLayer.selectAll('path')
@@ -208,6 +215,8 @@ function updateGraph(){
         .enter().append('path')
         .attr('d', path)
         .attr('vector-effect', 'non-scaling-stroke')
+        .attr('stroke-width', 0.001)
+        .attr('stroke', "#ffffff")
         .style('fill', function(d){
             if (year == "2003"){
               return color(d.properties.three);
@@ -289,7 +298,7 @@ function updateGraph(){
             } else if (year == "2007"){
             mapLayer.selectAll('path').style('fill', function(d){return centered && d===centered ? '#D5708B' : color(d.properties.seven);});
             } else if (year == "2008"){
-            mapLayer.selectAll('path').style('fill', function(d){return centered && d===centered ? '#D5708B' : color(d.properties.eight);});
+            mapLayer.selectAll('path').style('fill', function(d){return centered && d===centered ? '#D5708B' : color(d.properties.eigth);});
             } else if (year == "2009"){
             mapLayer.selectAll('path').style('fill', function(d){return centered && d===centered ? '#D5708B' : color(d.properties.nine);});
             } else if (year == "2010"){
@@ -352,13 +361,13 @@ g.selectAll('rect')
 legend.append("text")
 .attr('x',120)
 .attr('y',-d3.max(newData) + 621)
-.text(Math.floor(5.897847).toString())
+.text(Math.floor(2.24).toString())
 .style("font-size", "15px");
 
 legend.append("text")
 .attr('x',120)
 .attr('y',-d3.min(newData) + 275)
-.text(Math.ceil(42.2633).toString())
+.text(Math.ceil(130.24).toString())
 .style("font-size", "15px");
 
 legend.append("text")
@@ -369,6 +378,27 @@ legend.append("text")
   .style("font-weight", "100")
   .style('font-family', 'Arial')
   .text("Death Rate")
+
+function update(){
+  if (d3.select("#states").property("checked")){
+    d3.json('data/states.json', function(error, mapData) {
+      var features = mapData.features;
+
+      stateLayer.selectAll('path')
+          .data(features)
+          .enter().append('path')
+          .attr('d', path)
+          .attr('vector-effect', 'non-scaling-stroke')
+          .attr('stroke-width', 0.4)
+          .attr('stroke', "#fff")
+          .style('fill', "none")
+          .attr("pointer-events", "visibleStroke");
+    });
+  } else {
+    stateLayer.selectAll('path')
+    .remove()
+  }
+}
 
 var barrita = d3.select("#slider")
 barrita.on("change",updateGraph());

@@ -16,7 +16,7 @@ function allofthem(){
 
 // Get State name
 function nameFn(d){
-  return d && d.properties ? d.properties.NAME : null;
+  return d && d.properties ? d.properties.County_opiod : null;
 }
 
 
