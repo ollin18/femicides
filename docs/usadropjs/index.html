@@ -63,6 +63,7 @@ div.tooltip {
   <option value="Life">Life</option>
   <option value="Unemployment">Unemployment</option>
   <option value="Rank">Rank</option>
+  <option value="Gini">Gini</option>
 </select>
 <svg></svg>
 <script src="https://d3js.org/d3.v3.min.js"></script>
@@ -167,7 +168,8 @@ function updateGraph(){
   legend.selectAll("*").remove()
   // d3.json('data/muni_simp.json', function(error, mapData) {
   // d3.json('data/muni_2sigma_state.json', function(error, mapData) {
-  d3.json('data/us_counties.json', function(error, mapData) {
+  // d3.json('data/us_counties.json', function(error, mapData) {
+  d3.json('data/counties_all_data.json', function(error, mapData) {
     var features = mapData.features;
     var rateValue = [];
 
@@ -183,15 +185,15 @@ function updateGraph(){
         rateValue.push(d.properties.unemployment);
       } else if (model == "Rank") {
         rateValue.push(d.properties.rank);
+      } else if (model == "Gini") {
+        rateValue.push(d.properties.gini);
       }
-
-
         // rateValue.push(d3.select("#rateValue").node().value);
     });
 
     var color = d3.scale
-          .linear()
-          // .pow().exponent(0.5)
+          // .linear()
+          .pow().exponent(0.8)
           .domain([d3.min(rateValue),d3.max(rateValue)])
           .clamp(true)
           // .range([d3.rgb('#1a69d3'), d3.rgb('#9a190c')])
@@ -216,6 +218,8 @@ function updateGraph(){
             return color(d.properties.unemployment);
           } else if (model == "Rank") {
             return color(d.properties.rank);
+          } else if (model == "Gini") {
+            return color(d.properties.gini);
           }
           // return color(d.properties.rate_sph)
         })
@@ -263,6 +267,14 @@ function updateGraph(){
                 .style("left", (d3.event.pageX) + "px")
                 .style("top", (d3.event.pageY - 28) + "px");
 
+          } else if (model == "Gini"){
+            div.transition()
+                .duration(100)
+                .style("opacity", .9);
+            div.html(d.properties.County + "<br/>" +
+            "Gini Coef.: " + d.properties.gini.toFixed(2))
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY - 28) + "px");
           }
         })
         .on("mouseout", function(d) {
