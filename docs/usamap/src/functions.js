@@ -32,21 +32,31 @@ function clicked(d) {
 
   // Compute centroid of the selected path
   if (d && centered !== d) {
+    var coordinates= d3.mouse(this);
+    x1 = coordinates[0];
+    y1 = coordinates[1];
     var centroid = path.centroid(d);
     x = centroid[0];
     y = centroid[1];
     k = 3;
     centered = d;
-    dateX = x;
+    dateX = coordinates[0] - 100;
     dateY = y - 50;
+    sizeText = "10px"
   } else {
+    x1 = width / 2;
+    y1 = height / 2;
     x = width / 2;
     y = height / 2;
     k = 1;
     centered = null;
     dateX = width / 2 - 90;
-    dateY = height - 120;
+    dateY = 175;
+    sizeText = "23px"
   }
+
+  // .attr('x', width/2-90)
+  // .attr('y', 135);
 
   // Highlight the clicked province
   mapLayer.selectAll('path')
@@ -55,12 +65,19 @@ function clicked(d) {
   // Zoom
   g.transition()
     .duration(750)
-    .attr('transform', 'translate(' + width / 2 + ',' + height / 2 + ')scale(' + k + ')translate(' + -x + ',' + -y + ')');
+    // .attr('transform', 'translate(' + width / 2 + ',' + height / 2 + ')scale(' + k + ')translate(' + -x + ',' + -y + ')');
+    .attr('transform', 'translate(' + x1 + ',' + y1 + ')scale(' + k + ')translate(' + -x + ',' + -y + ')');
 
-  dateLayer.selectAll("*").transition()
+  bigText.transition()
     .duration(650)
     .attr('x', dateX)
     .attr('y', dateY)
+    .style("font-size", sizeText)
+
+// text.big-text{
+//   font-size: 23px;
+//   font-weight: 380;
+// }
 }
 
 function drawCross(data){
@@ -129,7 +146,39 @@ function mouseover(d,year){
 
 
 function fillFn(d){
-  return color(d.properties.ten);
+  var year = d3.selectAll("#slider").node().value
+  if (year == "2003"){
+                return color(d.properties.three);
+              } else if (year == "2004"){
+                return color(d.properties.four);
+              } else if (year == "2005"){
+                return color(d.properties.five);
+              } else if (year == "2006"){
+                return color(d.properties.six);
+              } else if (year == "2007"){
+                return color(d.properties.seven);
+              } else if (year == "2008"){
+                return color(d.properties.eight);
+              } else if (year == "2009"){
+                return color(d.properties.nine);
+              } else if (year == "2010"){
+                return color(d.properties.ten);
+              } else if (year == "2011"){
+                return color(d.properties.eleven);
+              } else if (year == "2012"){
+                return color(d.properties.twelve);
+              } else if (year == "2013"){
+                return color(d.properties.thirteen);
+              } else if (year == "2014"){
+                return color(d.properties.fourteen);
+              } else if (year == "2015"){
+                return color(d.properties.fifteen);
+              } else if (year == "2016"){
+                return color(d.properties.sixteen);
+              } else if (year == "2017"){
+                return color(d.properties.seventeen);
+              }
+  // return color(d.properties.ten);
 }
 
 function mouseout(d){

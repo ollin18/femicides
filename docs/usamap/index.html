@@ -164,7 +164,7 @@ var dummyText = g.append('text')
 var bigText = g.append('text')
   .classed('big-text', true)
   .attr('x', width/2-90)
-  .attr('y', 135);
+  .attr('y', 175);
 
 var titleLayer = g.append('text')
     .attr('x', width/2-80)
@@ -254,35 +254,35 @@ function updateGraph(){
         .on('mouseover', function(d){
             d3.select(this).style('fill', '#8a0303');
             if (year == "2003"){
-            textState(nameFn(d)+" - "+d.properties.three.toFixed(2).toString());
+            textState(nameFn(d)+" - "+parseFloat(d.properties.three).toFixed(2).toString());
             } else if (year == "2004"){
-            textState(nameFn(d)+" - "+d.properties.four.toFixed(2).toString());
+            textState(nameFn(d)+" - "+parseFloat(d.properties.four).toFixed(2).toString());
             } else if (year == "2005"){
-            textState(nameFn(d)+" - "+d.properties.five.toFixed(2).toString());
+            textState(nameFn(d)+" - "+parseFloat(d.properties.five).toFixed(2).toString());
             } else if (year == "2006"){
-            textState(nameFn(d)+" - "+d.properties.six.toFixed(2).toString());
+            textState(nameFn(d)+" - "+parseFloat(d.properties.six).toFixed(2).toString());
             } else if (year == "2007"){
-            textState(nameFn(d)+" - "+d.properties.seven.toFixed(2).toString());
+            textState(nameFn(d)+" - "+parseFloat(d.properties.seven).toFixed(2).toString());
             } else if (year == "2008"){
-            textState(nameFn(d)+" - "+d.properties.eight.toFixed(2).toString());
+            textState(nameFn(d)+" - "+parseFloat(d.properties.eight).toFixed(2).toString());
             } else if (year == "2009"){
-            textState(nameFn(d)+" - "+d.properties.nine.toFixed(2).toString());
+            textState(nameFn(d)+" - "+parseFloat(d.properties.nine).toFixed(2).toString());
             } else if (year == "2010"){
-            textState(nameFn(d)+" - "+d.properties.ten.toFixed(2).toString());
+            textState(nameFn(d)+" - "+parseFloat(d.properties.ten).toFixed(2).toString());
             } else if (year == "2011"){
-            textState(nameFn(d)+" - "+d.properties.eleven.toFixed(2).toString());
+            textState(nameFn(d)+" - "+parseFloat(d.properties.eleven).toFixed(2).toString());
             } else if (year == "2012"){
-            textState(nameFn(d)+" - "+d.properties.twelve.toFixed(2).toString());
+            textState(nameFn(d)+" - "+parseFloat(d.properties.twelve).toFixed(2).toString());
             } else if (year == "2013"){
-            textState(nameFn(d)+" - "+d.properties.thirteen.toFixed(2).toString());
+            textState(nameFn(d)+" - "+parseFloat(d.properties.thirteen).toFixed(2).toString());
             } else if (year == "2014"){
-            textState(nameFn(d)+" - "+d.properties.fourteen.toFixed(2).toString());
+            textState(nameFn(d)+" - "+parseFloat(d.properties.fourteen).toFixed(2).toString());
             } else if (year == "2015"){
-            textState(nameFn(d)+" - "+d.properties.fifteen.toFixed(2).toString());
+            textState(nameFn(d)+" - "+parseFloat(d.properties.fifteen).toFixed(2).toString());
             } else if (year == "2016"){
-            textState(nameFn(d)+" - "+d.properties.sixteen.toFixed(2).toString());
+            textState(nameFn(d)+" - "+parseFloat(d.properties.sixteen).toFixed(2).toString());
             } else if (year == "2017"){
-            textState(nameFn(d)+" - "+d.properties.seventeen.toFixed(2).toString());
+            textState(nameFn(d)+" - "+parseFloat(d.properties.seventeen).toFixed(2).toString());
             }
           })
         .on('mouseout', function(d){
