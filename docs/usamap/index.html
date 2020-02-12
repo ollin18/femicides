@@ -202,7 +202,8 @@ function updateGraph(){
         .remove()
   // crossLayer.selectAll('*').remove()
 
-  d3.json('data/county_data_fixed.json', function(error, mapData) {
+  // d3.json('data/county_data_fixed.json', function(error, mapData) {
+  d3.json('data/counties_all_data.json', function(error, mapData) {
     var features = mapData.features;
     var rateValue = [];
 
