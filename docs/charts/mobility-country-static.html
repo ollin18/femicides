@@ -177,9 +177,10 @@
     .y(function(d) { return yScale(+d.y2); });
 
   var dat, group, gDat;
+  var dataurl = "https://raw.githubusercontent.com/ollin18/femicides/master/docs/charts/all_cities_data.csv"
 
   //0:thome,1:comms,2:comms_hw
-  d3.csv("file:///all_cities_data.csv", function(error, data){
+  d3.csv(dataurl, function(error, data){
     data.forEach(function(d){
         d.date = d.date
         d.y2 = +d.y2
