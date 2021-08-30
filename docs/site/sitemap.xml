@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
-<loc>https://ollin18.github.io/femicides//site/about</loc>
+<loc>https://ollin18.github.io/femicides//about</loc>
 </url>
 <url>
-<loc>https://ollin18.github.io/femicides//site/blog</loc>
+<loc>https://ollin18.github.io/femicides//blog</loc>
 </url>
 <url>
-<loc>https://ollin18.github.io/femicides//site/contact</loc>
+<loc>https://ollin18.github.io/femicides//contact</loc>
 </url>
 <url>
-<loc>https://ollin18.github.io/femicides//site/</loc>
+<loc>https://ollin18.github.io/femicides//</loc>
 </url>
 <url>
-<loc>https://ollin18.github.io/femicides//site/projects/proj-1.html</loc>
+<loc>https://ollin18.github.io/femicides//projects/proj-1.html</loc>
 </url>
 <url>
-<loc>https://ollin18.github.io/femicides//site/projects/proj-2.html</loc>
+<loc>https://ollin18.github.io/femicides//projects/proj-2.html</loc>
 </url>
 </urlset>
