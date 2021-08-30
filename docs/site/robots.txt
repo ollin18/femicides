@@ -1,1 +1,1 @@
-Sitemap: /sitemap.xml
+Sitemap: https://worldbank.github.io/SDG-big-data//site/sitemap.xml
